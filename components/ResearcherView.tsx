@@ -180,7 +180,7 @@ export default function ResearcherView() {
               {images.map((img) => (
                 <div key={img} className="relative group">
                   <img
-                    src={`/uploads/${encodeURIComponent(img)}`}
+                    src={`/api/uploads/${encodeURIComponent(img)}`}
                     alt={img}
                     className="w-full aspect-video object-cover rounded-lg border border-gray-200"
                   />

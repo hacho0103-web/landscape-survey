@@ -111,7 +111,7 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
             {/* Image */}
             <img
               key={currentIndex}
-              src={`/uploads/${encodeURIComponent(images[currentIndex])}`}
+              src={`/api/uploads/${encodeURIComponent(images[currentIndex])}`}
               alt={`이미지 ${currentIndex + 1}`}
               className="max-w-full max-h-full object-contain"
               style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
