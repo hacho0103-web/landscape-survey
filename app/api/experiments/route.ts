@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 
-const DATA_DIR = path.join(process.cwd(), 'data')
+const DATA_DIR = path.join(process.cwd(), 'public', 'uploads', '_data')
 const DATA_FILE = path.join(DATA_DIR, 'experiments.json')
 
 interface Experiment {
