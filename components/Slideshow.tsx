@@ -11,6 +11,7 @@ interface SlideshowProps {
 export default function Slideshow({ images, onComplete, onExit }: SlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isDone, setIsDone] = useState(false)
+  const [isBlackScreen, setIsBlackScreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -36,21 +37,28 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
     }
   }, [requestFullscreen, exitFullscreen])
 
-  useEffect(() => {
-    if (isDone) return
-    if (currentIndex >= images.length) {
+  const handleNext = useCallback(() => {
+    const nextIndex = currentIndex + 1
+    if (nextIndex >= images.length) {
       setIsDone(true)
       exitFullscreen()
       onComplete()
-      return
+    } else {
+      setCurrentIndex(nextIndex)
+      setIsBlackScreen(false)
     }
+  }, [currentIndex, images.length, onComplete, exitFullscreen])
+
+  useEffect(() => {
+    if (isDone || isBlackScreen) return
+    if (currentIndex >= images.length) return
     timerRef.current = setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1)
-    }, 3000)
+      setIsBlackScreen(true)
+    }, 10000)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [currentIndex, images.length, isDone, onComplete, exitFullscreen])
+  }, [currentIndex, images.length, isDone, isBlackScreen])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -72,45 +80,55 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
       style={{ width: '100vw', height: '100vh' }}
     >
       {!isDone && currentIndex < images.length ? (
-        <>
-          {/* Progress bar */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-white/10">
-            <div
-              className="h-full bg-white/50 transition-none"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        isBlackScreen ? (
+          /* 검은 화면 + 다음 버튼 */
+          <button
+            onClick={handleNext}
+            className="px-8 py-4 bg-white text-black text-lg font-semibold rounded-lg hover:bg-white/90 transition-colors"
+          >
+            {currentIndex + 1 < images.length ? '다음 이미지' : '완료'}
+          </button>
+        ) : (
+          <>
+            {/* Progress bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-white/10">
+              <div
+                className="h-full bg-white/50 transition-none"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
 
-          {/* 순서 번호 - 왼쪽 위 */}
-          <div className="absolute top-4 left-6 text-white text-2xl font-bold drop-shadow-lg">
-            {currentIndex + 1}
-          </div>
+            {/* 순서 번호 - 왼쪽 위 */}
+            <div className="absolute top-4 left-6 text-white text-2xl font-bold drop-shadow-lg">
+              {currentIndex + 1}
+            </div>
 
-          {/* Image count - 오른쪽 위 */}
-          <div className="absolute top-4 right-6 text-white/60 text-sm font-mono">
-            {currentIndex + 1} / {images.length}
-          </div>
+            {/* Image count - 오른쪽 위 */}
+            <div className="absolute top-4 right-6 text-white/60 text-sm font-mono">
+              {currentIndex + 1} / {images.length}
+            </div>
 
-          {/* Image */}
-          <img
-            key={currentIndex}
-            src={`/uploads/${images[currentIndex]}`}
-            alt={`이미지 ${currentIndex + 1}`}
-            className="max-w-full max-h-full object-contain"
-            style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
-          />
-
-          {/* 3초 타이머 바 */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-            <div
+            {/* Image */}
+            <img
               key={currentIndex}
-              className="h-full bg-white/70"
-              style={{
-                animation: 'timer-progress 3s linear forwards',
-              }}
+              src={`/uploads/${encodeURIComponent(images[currentIndex])}`}
+              alt={`이미지 ${currentIndex + 1}`}
+              className="max-w-full max-h-full object-contain"
+              style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
             />
-          </div>
-        </>
+
+            {/* 10초 타이머 바 */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+              <div
+                key={currentIndex}
+                className="h-full bg-white/70"
+                style={{
+                  animation: 'timer-progress 10s linear forwards',
+                }}
+              />
+            </div>
+          </>
+        )
       ) : null}
 
       <style>{`
