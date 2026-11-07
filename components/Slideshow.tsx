@@ -16,7 +16,7 @@ function imageUrl(filename: string) {
 
 export default function Slideshow({ images, onComplete, onExit }: SlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isConfirming, setIsConfirming] = useState(false)
+  const [confirming, setConfirming] = useState<'complete' | 'exit' | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const viewTimesRef = useRef<ViewTimes>({})
   const viewingRef = useRef<{ filename: string; since: number } | null>(null)
@@ -55,7 +55,7 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
 
   const handleNext = useCallback(() => {
     if (isLast) {
-      setIsConfirming(true)
+      setConfirming('complete')
     } else {
       stopViewing()
       setCurrentIndex((index) => index + 1)
@@ -74,17 +74,21 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
     onComplete(viewTimesRef.current)
   }, [stopViewing, exitFullscreen, onComplete])
 
+  const handleExit = useCallback(() => {
+    stopViewing()
+    exitFullscreen()
+    onExit(viewTimesRef.current)
+  }, [stopViewing, exitFullscreen, onExit])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 완료 확인 중에는 화살표로 끝나지 않게 하고, 돌아가기만 허용한다.
-      if (isConfirming) {
-        if (e.key === 'Escape' || e.key === 'ArrowLeft') setIsConfirming(false)
+      if (confirming) {
+        if (e.key === 'Escape' || e.key === 'ArrowLeft') setConfirming(null)
         return
       }
       if (e.key === 'Escape') {
-        stopViewing()
-        exitFullscreen()
-        onExit(viewTimesRef.current)
+        handleExit()
         return
       }
       // 키를 누르고 있어도 한 장씩만 넘어가도록 자동 반복은 무시한다.
@@ -94,7 +98,7 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isConfirming, onExit, exitFullscreen, stopViewing, handleNext, handlePrev])
+  }, [confirming, handleExit, handleNext, handlePrev])
 
   // 넘길 때 빈 화면이 보이지 않도록 앞뒤 이미지를 미리 불러온다.
   useEffect(() => {
@@ -133,31 +137,41 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
         <div className="h-0.5 bg-white/10">
           <div className="h-full bg-white/40" style={{ width: `${progress}%` }} />
         </div>
-        {isConfirming ? (
+        {confirming ? (
           <div className="h-12 px-6 flex items-center justify-between">
-            <button onClick={() => setIsConfirming(false)} className={buttonClass}>
+            <button onClick={() => setConfirming(null)} className={buttonClass}>
               ← 돌아가기
             </button>
-            <span className="text-sm text-white">실험을 완료할까요?</span>
+            <span className="text-sm text-white">
+              {confirming === 'complete' ? '실험을 완료할까요?' : '실험을 나갈까요?'}
+            </span>
             <button
-              onClick={handleComplete}
+              onClick={confirming === 'complete' ? handleComplete : handleExit}
               autoFocus
               className="px-4 py-1.5 text-sm font-semibold bg-white text-black rounded-md hover:bg-white/90 transition-colors"
             >
-              완료
+              {confirming === 'complete' ? '완료' : '나가기'}
             </button>
           </div>
         ) : (
-          <div className="h-12 px-6 flex items-center justify-between">
-            <button onClick={handlePrev} disabled={isFirst} className={buttonClass}>
-              ← 이전
+          <div className="h-12 px-6 grid grid-cols-3 items-center">
+            <button
+              onClick={() => setConfirming('exit')}
+              className={`${buttonClass} justify-self-start`}
+            >
+              나가기
             </button>
-            <span className="text-sm font-mono text-white/60">
+            <span className="text-sm font-mono text-white/60 text-center">
               {currentIndex + 1} / {images.length}
             </span>
-            <button onClick={handleNext} className={buttonClass}>
-              {isLast ? '완료' : '다음 →'}
-            </button>
+            <div className="flex gap-2 justify-self-end">
+              <button onClick={handlePrev} disabled={isFirst} className={buttonClass}>
+                ← 이전
+              </button>
+              <button onClick={handleNext} className={buttonClass}>
+                {isLast ? '완료' : '다음 →'}
+              </button>
+            </div>
           </div>
         )}
       </div>

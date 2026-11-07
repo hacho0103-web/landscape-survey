@@ -56,19 +56,26 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const filename = searchParams.get('filename')
-    if (!filename) {
+    const body = filename ? null : await req.json().catch(() => null)
+    const filenames: unknown = filename ? [filename] : body?.filenames
+    if (!Array.isArray(filenames) || filenames.length === 0) {
       return Response.json({ error: '파일명이 없습니다.' }, { status: 400 })
     }
 
-    // Prevent path traversal
-    const safe = path.basename(filename)
-    const filePath = path.join(UPLOAD_DIR, safe)
-    if (!filePath.startsWith(UPLOAD_DIR)) {
-      return Response.json({ error: '잘못된 경로입니다.' }, { status: 400 })
+    const deleted: string[] = []
+    const failed: string[] = []
+    for (const name of filenames) {
+      // Prevent path traversal
+      const safe = path.basename(String(name))
+      try {
+        await unlink(path.join(UPLOAD_DIR, safe))
+        deleted.push(safe)
+      } catch {
+        failed.push(safe)
+      }
     }
 
-    await unlink(filePath)
-    return Response.json({ deleted: safe })
+    return Response.json({ deleted, failed }, { status: deleted.length > 0 ? 200 : 500 })
   } catch {
     return Response.json({ error: '삭제 실패' }, { status: 500 })
   }

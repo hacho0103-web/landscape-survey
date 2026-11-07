@@ -27,6 +27,7 @@ export default function ResearcherView() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loadingExps, setLoadingExps] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -105,6 +106,41 @@ export default function ResearcherView() {
     }
   }
 
+  function toggleImage(filename: string) {
+    setSelectedImages((prev) => {
+      const next = new Set(prev)
+      if (next.has(filename)) next.delete(filename)
+      else next.add(filename)
+      return next
+    })
+  }
+
+  function toggleAllImages() {
+    setSelectedImages(allImagesSelected ? new Set() : new Set(images))
+  }
+
+  async function handleDeleteSelectedImages() {
+    const filenames = images.filter((f) => selectedImages.has(f))
+    if (filenames.length === 0) return
+    if (!confirm(`선택한 이미지 ${filenames.length}개를 삭제할까요? 되돌릴 수 없습니다.`)) return
+    try {
+      const res = await fetch('/api/images', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filenames }),
+      })
+      const data = await res.json().catch(() => null)
+      const failed: string[] = data?.failed ?? (res.ok ? [] : filenames)
+      setImages((prev) =>
+        prev.filter((f) => !filenames.includes(f) || failed.includes(f))
+      )
+      setSelectedImages(new Set(failed))
+      if (failed.length > 0) alert(`${failed.length}개를 삭제하지 못했습니다.`)
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.')
+    }
+  }
+
   async function handleDeleteExperiment(id: string) {
     if (!confirm('이 실험 기록을 삭제할까요?')) return
     try {
@@ -151,6 +187,8 @@ export default function ResearcherView() {
     }
   }
 
+  const selectedImageCount = images.filter((f) => selectedImages.has(f)).length
+  const allImagesSelected = images.length > 0 && selectedImageCount === images.length
   const selectedCount = experiments.filter((e) => selectedIds.has(e.id)).length
   const allSelected = experiments.length > 0 && selectedCount === experiments.length
 
@@ -221,12 +259,38 @@ export default function ResearcherView() {
 
         {images.length > 0 && (
           <div className="mt-4">
-            <p className="text-sm font-medium text-gray-600 mb-3">
-              현재 이미지 ({images.length}개)
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <p className="text-sm font-medium text-gray-600">
+                  현재 이미지 ({images.length}개)
+                </p>
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allImagesSelected}
+                    onChange={toggleAllImages}
+                  />
+                  전체 선택
+                </label>
+              </div>
+              <button
+                onClick={handleDeleteSelectedImages}
+                disabled={selectedImageCount === 0}
+                className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-40 disabled:hover:bg-red-500"
+              >
+                선택 삭제{selectedImageCount > 0 ? ` (${selectedImageCount}개)` : ''}
+              </button>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {images.map((img) => (
                 <div key={img} className="relative group">
+                  <input
+                    type="checkbox"
+                    checked={selectedImages.has(img)}
+                    aria-label={`${img} 선택`}
+                    onChange={() => toggleImage(img)}
+                    className="absolute top-2 left-2 z-10 w-4 h-4"
+                  />
                   <img
                     src={`/api/uploads/${encodeURIComponent(img)}`}
                     alt={img}
