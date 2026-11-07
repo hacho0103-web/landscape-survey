@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { readFile, writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { requireResearcher } from '@/lib/auth'
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'uploads', '_data')
 const DATA_FILE = path.join(DATA_DIR, 'experiments.json')
@@ -31,6 +32,9 @@ async function writeExperiments(experiments: Experiment[]) {
 }
 
 export async function GET() {
+  const denied = await requireResearcher()
+  if (denied) return denied
+
   const experiments = await readExperiments()
   return Response.json(experiments)
 }

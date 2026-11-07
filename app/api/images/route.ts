@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { writeFile, readdir, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { requireResearcher } from '@/lib/auth'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
 const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i
@@ -20,6 +21,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireResearcher()
+  if (denied) return denied
+
   try {
     const formData = await req.formData()
     const files = formData.getAll('files') as File[]
@@ -46,6 +50,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const denied = await requireResearcher()
+  if (denied) return denied
+
   try {
     const { searchParams } = new URL(req.url)
     const filename = searchParams.get('filename')

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import ParticipantView from '@/components/ParticipantView'
-import ResearcherView from '@/components/ResearcherView'
+import ResearcherGate from '@/components/ResearcherGate'
 import GalleryView from '@/components/GalleryView'
 
 type Tab = 'participant' | 'researcher' | 'gallery'
@@ -52,7 +52,7 @@ export default function Home() {
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
         {tab === 'participant' && <ParticipantView />}
-        {tab === 'researcher' && <ResearcherView />}
+        {tab === 'researcher' && <ResearcherGate />}
         {tab === 'gallery' && <GalleryView />}
       </main>
     </div>

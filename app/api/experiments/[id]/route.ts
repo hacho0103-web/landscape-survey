@@ -1,8 +1,9 @@
 import { readFile, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { requireResearcher } from '@/lib/auth'
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'experiments.json')
+const DATA_FILE = path.join(process.cwd(), 'public', 'uploads', '_data', 'experiments.json')
 
 interface Experiment {
   id: string
@@ -22,6 +23,9 @@ async function readExperiments(): Promise<Experiment[]> {
 }
 
 export async function GET(_req: Request, ctx: RouteContext<'/api/experiments/[id]'>) {
+  const denied = await requireResearcher()
+  if (denied) return denied
+
   const { id } = await ctx.params
   const experiments = await readExperiments()
   const exp = experiments.find((e) => e.id === id)
@@ -30,6 +34,9 @@ export async function GET(_req: Request, ctx: RouteContext<'/api/experiments/[id
 }
 
 export async function DELETE(_req: Request, ctx: RouteContext<'/api/experiments/[id]'>) {
+  const denied = await requireResearcher()
+  if (denied) return denied
+
   const { id } = await ctx.params
   const experiments = await readExperiments()
   const filtered = experiments.filter((e) => e.id !== id)
