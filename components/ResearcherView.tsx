@@ -16,6 +16,7 @@ export default function ResearcherView() {
   const [uploadMsg, setUploadMsg] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loadingExps, setLoadingExps] = useState(true)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -105,6 +106,43 @@ export default function ResearcherView() {
       alert('삭제 중 오류가 발생했습니다.')
     }
   }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(experiments.map((e) => e.id)))
+  }
+
+  async function handleDeleteSelected() {
+    const ids = experiments.filter((e) => selectedIds.has(e.id)).map((e) => e.id)
+    if (ids.length === 0) return
+    if (!confirm(`선택한 실험 기록 ${ids.length}건을 삭제할까요?`)) return
+    try {
+      const res = await fetch('/api/experiments', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+      if (res.ok) {
+        setExperiments((prev) => prev.filter((e) => !ids.includes(e.id)))
+        setSelectedIds(new Set())
+      } else {
+        alert('삭제에 실패했습니다.')
+      }
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  const selectedCount = experiments.filter((e) => selectedIds.has(e.id)).length
+  const allSelected = experiments.length > 0 && selectedCount === experiments.length
 
   function formatDate(iso: string) {
     const d = new Date(iso)
@@ -221,6 +259,19 @@ export default function ResearcherView() {
           <p className="text-gray-400 text-sm">아직 실험 기록이 없습니다.</p>
         ) : (
           <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between px-4">
+              <label className="flex items-center gap-3 text-sm text-gray-600 cursor-pointer">
+                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+                전체 선택
+              </label>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={selectedCount === 0}
+                className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-40 disabled:hover:bg-red-500"
+              >
+                선택 삭제{selectedCount > 0 ? ` (${selectedCount}건)` : ''}
+              </button>
+            </div>
             {experiments.map((exp) => (
               <div
                 key={exp.id}
@@ -233,6 +284,13 @@ export default function ResearcherView() {
                   }
                 >
                   <div className="flex items-center gap-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(exp.id)}
+                      aria-label={`${exp.label} 선택`}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleSelected(exp.id)}
+                    />
                     <span className="font-semibold text-gray-800">{exp.label}</span>
                     <span className="text-sm text-gray-500">{formatDate(exp.date)}</span>
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
