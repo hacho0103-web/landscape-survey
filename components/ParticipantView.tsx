@@ -186,7 +186,15 @@ export default function ParticipantView() {
   return (
     <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-8">
       <div className="text-center">
-        <p className="text-lg leading-relaxed text-neutral-600">
+        <h2 className="text-4xl sm:text-5xl font-bold leading-tight tracking-tight text-balance text-neutral-900">
+          대규모 업무시설 저층부 보행자 경관 인식 조사 실험
+        </h2>
+        <p className="mt-5 text-lg leading-relaxed font-medium text-neutral-700">
+          연세대학교 일반대학원 건축공학과
+          <br />
+          CAT 건축도시디자인 연구실 조하은 연구원
+        </p>
+        <p className="mt-10 text-lg leading-relaxed text-neutral-600">
           버튼을 누르면 튜토리얼이 시작됩니다. 보고 진행해주세요.
           <br />
           시간제한 없이 ←, → 키나 화면 아래 버튼으로 이미지를 넘기고, 나가기 버튼으로 끝낼 수 있습니다.
