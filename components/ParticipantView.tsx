@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Interview from './Interview'
 import Slideshow, { type BeginResult, type ViewTimes } from './Slideshow'
 
 interface Experiment {
@@ -23,6 +24,7 @@ export default function ParticipantView() {
   const [images, setImages] = useState<string[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [shuffledImages, setShuffledImages] = useState<string[]>([])
+  const [isInterviewing, setIsInterviewing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [lastExperiment, setLastExperiment] = useState<Experiment | null>(null)
   const [loading, setLoading] = useState(true)
@@ -87,9 +89,26 @@ export default function ParticipantView() {
 
   async function handleComplete(viewTimes: ViewTimes) {
     setIsRunning(false)
-    setIsComplete(true)
+    setIsInterviewing(true)
     setPendingViewTimes(viewTimes)
     setSaveFailed(!(await saveViewTimes(viewTimes, true)))
+  }
+
+  async function handleInterviewSubmit(interviewAnswers: string[]) {
+    if (!lastExperiment) return false
+    try {
+      const res = await fetch(`/api/experiments/${lastExperiment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewAnswers }),
+      })
+      if (!res.ok && res.status !== 409) return false
+    } catch {
+      return false
+    }
+    setIsInterviewing(false)
+    setIsComplete(true)
+    return true
   }
 
   async function handleRetrySave() {
@@ -120,6 +139,10 @@ export default function ParticipantView() {
         onExit={handleExit}
       />
     )
+  }
+
+  if (isInterviewing) {
+    return <Interview onSubmit={handleInterviewSubmit} />
   }
 
   if (isComplete) {

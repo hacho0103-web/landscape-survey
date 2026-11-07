@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { INTERVIEW_QUESTIONS } from '@/lib/interview'
 
 interface Experiment {
   id: string
@@ -9,6 +10,7 @@ interface Experiment {
   imageOrder: string[]
   viewTimes?: Record<string, number>
   completed?: boolean
+  interviewAnswers?: string[]
 }
 
 function formatSeconds(ms: number) {
@@ -375,6 +377,11 @@ export default function ResearcherView() {
                         총 {formatSeconds(totalViewTime(exp))}
                       </span>
                     ) : null}
+                    {exp.completed === true && !exp.interviewAnswers && (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                        인터뷰 없음
+                      </span>
+                    )}
                     {exp.completed !== true && (
                       <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
                         {exp.completed === false ? '중단됨' : '시간 기록 없음'}
@@ -417,6 +424,23 @@ export default function ResearcherView() {
                         </li>
                       ))}
                     </ol>
+                    {exp.interviewAnswers && (
+                      <div className="mt-5 border-t border-neutral-200 pt-4">
+                        <p className="text-xs font-medium text-neutral-500 mb-3">인터뷰</p>
+                        <dl className="flex flex-col gap-3 text-sm">
+                          {INTERVIEW_QUESTIONS.map((question, idx) => (
+                            <div key={question}>
+                              <dt className="font-medium text-neutral-800">
+                                {idx + 1}. {question}
+                              </dt>
+                              <dd className="mt-1 text-neutral-600 whitespace-pre-wrap">
+                                {exp.interviewAnswers?.[idx]}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </div>
+                    )}
                     <p className="text-xs text-neutral-400 mt-3 font-mono">ID: {exp.id}</p>
                   </div>
                 )}
