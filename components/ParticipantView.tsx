@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Slideshow from './Slideshow'
+import Slideshow, { type ViewTimes } from './Slideshow'
 
 interface Experiment {
   id: string
@@ -27,6 +27,9 @@ export default function ParticipantView() {
   const [lastExperiment, setLastExperiment] = useState<Experiment | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState(false)
+  const [pendingViewTimes, setPendingViewTimes] = useState<ViewTimes | null>(null)
+  const [saveFailed, setSaveFailed] = useState(false)
 
   useEffect(() => {
     fetchImages()
@@ -48,19 +51,23 @@ export default function ParticipantView() {
   async function startExperiment() {
     if (images.length === 0) return
     setStarting(true)
+    setStartError(false)
     const ordered = shuffle(images)
     setShuffledImages(ordered)
 
+    // 기록 없이 진행하면 결과가 남지 않으므로 저장에 실패하면 시작하지 않는다.
     try {
       const res = await fetch('/api/experiments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageOrder: ordered }),
       })
-      const exp = await res.json()
-      setLastExperiment(exp)
+      if (!res.ok) throw new Error('save failed')
+      setLastExperiment(await res.json())
     } catch {
-      // 실험은 계속 진행
+      setStartError(true)
+      setStarting(false)
+      return
     }
 
     setIsComplete(false)
@@ -68,19 +75,43 @@ export default function ParticipantView() {
     setIsRunning(true)
   }
 
-  function handleComplete() {
-    setIsRunning(false)
-    setIsComplete(true)
+  async function saveViewTimes(viewTimes: ViewTimes, completed: boolean) {
+    if (!lastExperiment) return false
+    try {
+      const res = await fetch(`/api/experiments/${lastExperiment.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewTimes, completed }),
+      })
+      return res.ok || res.status === 409 // 409: 이미 저장됨
+    } catch {
+      return false
+    }
   }
 
-  function handleExit() {
+  async function handleComplete(viewTimes: ViewTimes) {
+    setIsRunning(false)
+    setIsComplete(true)
+    setPendingViewTimes(viewTimes)
+    setSaveFailed(!(await saveViewTimes(viewTimes, true)))
+  }
+
+  async function handleRetrySave() {
+    if (!pendingViewTimes) return
+    setSaveFailed(!(await saveViewTimes(pendingViewTimes, true)))
+  }
+
+  function handleExit(viewTimes: ViewTimes) {
     setIsRunning(false)
     setIsComplete(false)
+    saveViewTimes(viewTimes, false)
   }
 
   function handleReset() {
     setIsComplete(false)
     setLastExperiment(null)
+    setPendingViewTimes(null)
+    setSaveFailed(false)
   }
 
   if (isRunning) {
@@ -102,6 +133,19 @@ export default function ParticipantView() {
           <p className="text-gray-500 text-sm">
             기록 ID: <span className="font-mono">{lastExperiment.id}</span>
           </p>
+        )}
+        {saveFailed && (
+          <div className="flex flex-col items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-6 py-4">
+            <p className="text-sm text-red-700">
+              관람 시간 저장에 실패했습니다. 화면을 닫지 말고 다시 시도해주세요.
+            </p>
+            <button
+              onClick={handleRetrySave}
+              className="text-sm font-medium text-red-700 underline"
+            >
+              다시 저장
+            </button>
+          </div>
         )}
         <button
           onClick={handleReset}
@@ -145,6 +189,11 @@ export default function ParticipantView() {
           >
             {starting ? '준비 중...' : '실험 시작'}
           </button>
+          {startError && (
+            <p className="text-sm text-red-600">
+              실험 기록을 만들지 못했습니다. 다시 시도해주세요.
+            </p>
+          )}
           <p className="text-gray-400 text-xs">ESC 키를 누르면 실험을 중단합니다.</p>
         </>
       )}

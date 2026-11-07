@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import ResearcherView from '@/components/ResearcherView'
+import { useState, type ReactNode } from 'react'
 
 // 실험 기기를 참가자와 공유하므로 탭에 들어올 때마다 비밀번호를 묻는다.
-export default function ResearcherGate() {
+export default function PasswordGate({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -35,11 +34,11 @@ export default function ResearcherGate() {
     }
   }
 
-  if (unlocked) return <ResearcherView />
+  if (unlocked) return <>{children}</>
 
   return (
     <section className="max-w-sm mx-auto bg-white border border-gray-200 rounded-xl p-6">
-      <h2 className="text-lg font-bold text-gray-800 mb-4">연구자 인증</h2>
+      <h2 className="text-lg font-bold text-gray-800 mb-4">비밀번호 확인</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           type="password"

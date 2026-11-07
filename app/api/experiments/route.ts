@@ -12,6 +12,8 @@ interface Experiment {
   label: string
   date: string
   imageOrder: string[]
+  viewTimes?: Record<string, number>
+  completed?: boolean
 }
 
 async function readExperiments(): Promise<Experiment[]> {

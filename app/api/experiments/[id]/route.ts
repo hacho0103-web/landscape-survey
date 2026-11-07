@@ -10,6 +10,8 @@ interface Experiment {
   label: string
   date: string
   imageOrder: string[]
+  viewTimes?: Record<string, number> // 이미지별 누적 관람 시간(ms)
+  completed?: boolean // false면 ESC로 중단한 실험
 }
 
 async function readExperiments(): Promise<Experiment[]> {
@@ -31,6 +33,38 @@ export async function GET(_req: Request, ctx: RouteContext<'/api/experiments/[id
   const exp = experiments.find((e) => e.id === id)
   if (!exp) return Response.json({ error: '없음' }, { status: 404 })
   return Response.json(exp)
+}
+
+// 참가자가 실험을 마칠 때 호출하므로 인증을 요구하지 않는다.
+// 대신 기록당 한 번만 저장할 수 있고 해당 실험의 이미지에 대한 값만 받는다.
+export async function PATCH(req: Request, ctx: RouteContext<'/api/experiments/[id]'>) {
+  const { id } = await ctx.params
+  const body = await req.json().catch(() => null)
+  const viewTimes = body?.viewTimes
+  if (!viewTimes || typeof viewTimes !== 'object' || Array.isArray(viewTimes)) {
+    return Response.json({ error: '관람 시간이 없습니다.' }, { status: 400 })
+  }
+
+  const experiments = await readExperiments()
+  const exp = experiments.find((e) => e.id === id)
+  if (!exp) return Response.json({ error: '없음' }, { status: 404 })
+  if (exp.viewTimes) return Response.json({ error: '이미 저장되었습니다.' }, { status: 409 })
+
+  const isValid = Object.entries(viewTimes).every(
+    ([filename, ms]) =>
+      exp.imageOrder.includes(filename) &&
+      typeof ms === 'number' &&
+      Number.isFinite(ms) &&
+      ms >= 0
+  )
+  if (!isValid) {
+    return Response.json({ error: '잘못된 관람 시간입니다.' }, { status: 400 })
+  }
+
+  exp.viewTimes = viewTimes
+  exp.completed = body.completed === true
+  await writeFile(DATA_FILE, JSON.stringify(experiments, null, 2), 'utf-8')
+  return Response.json({ saved: id })
 }
 
 export async function DELETE(_req: Request, ctx: RouteContext<'/api/experiments/[id]'>) {

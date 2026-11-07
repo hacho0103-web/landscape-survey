@@ -7,6 +7,16 @@ interface Experiment {
   label: string
   date: string
   imageOrder: string[]
+  viewTimes?: Record<string, number>
+  completed?: boolean
+}
+
+function formatSeconds(ms: number) {
+  return `${(ms / 1000).toFixed(1)}초`
+}
+
+function totalViewTime(exp: Experiment) {
+  return Object.values(exp.viewTimes ?? {}).reduce((sum, ms) => sum + ms, 0)
 }
 
 export default function ResearcherView() {
@@ -296,6 +306,16 @@ export default function ResearcherView() {
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                       {exp.imageOrder.length}개 이미지
                     </span>
+                    {exp.viewTimes ? (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                        총 {formatSeconds(totalViewTime(exp))}
+                      </span>
+                    ) : null}
+                    {exp.completed !== true && (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                        {exp.completed === false ? '중단됨' : '시간 기록 없음'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -316,7 +336,7 @@ export default function ResearcherView() {
                 {expandedId === exp.id && (
                   <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
                     <p className="text-xs font-medium text-gray-500 mb-2">
-                      표시 순서 (1번부터)
+                      표시 순서 (1번부터) · 이미지별 관람 시간
                     </p>
                     <ol className="flex flex-col gap-1">
                       {exp.imageOrder.map((img, idx) => (
@@ -325,6 +345,11 @@ export default function ResearcherView() {
                             {idx + 1}
                           </span>
                           <span className="font-mono text-gray-700 truncate">{img}</span>
+                          {exp.viewTimes && (
+                            <span className="ml-auto font-mono text-gray-500 flex-shrink-0">
+                              {formatSeconds(exp.viewTimes[img] ?? 0)}
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ol>
