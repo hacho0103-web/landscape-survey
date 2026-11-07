@@ -4,10 +4,11 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Tutorial from './Tutorial'
 
 export type ViewTimes = Record<string, number>
+export type BeginResult = 'ok' | 'duplicate' | 'error'
 
 interface SlideshowProps {
   images: string[]
-  onBegin: () => Promise<boolean>
+  onBegin: (participantId: string) => Promise<BeginResult>
   onComplete: (viewTimes: ViewTimes) => void
   onExit: (viewTimes: ViewTimes) => void
 }
@@ -19,7 +20,7 @@ function imageUrl(filename: string) {
 export default function Slideshow({ images, onBegin, onComplete, onExit }: SlideshowProps) {
   const [hasBegun, setHasBegun] = useState(false)
   const [isBeginning, setIsBeginning] = useState(false)
-  const [beginFailed, setBeginFailed] = useState(false)
+  const [beginError, setBeginError] = useState<string | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [confirming, setConfirming] = useState<'complete' | 'exit' | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -85,11 +86,13 @@ export default function Slideshow({ images, onBegin, onComplete, onExit }: Slide
     onExit(viewTimesRef.current)
   }, [stopViewing, exitFullscreen, onExit])
 
-  async function handleBegin() {
+  async function handleBegin(participantId: string) {
     setIsBeginning(true)
-    setBeginFailed(false)
-    if (await onBegin()) setHasBegun(true)
-    else setBeginFailed(true)
+    setBeginError(null)
+    const result = await onBegin(participantId)
+    if (result === 'ok') setHasBegun(true)
+    else if (result === 'duplicate') setBeginError('이미 실험을 완료한 번호입니다. 번호를 확인해주세요.')
+    else setBeginError('실험 기록을 만들지 못했습니다. 다시 시도해주세요.')
     setIsBeginning(false)
   }
 
@@ -139,7 +142,7 @@ export default function Slideshow({ images, onBegin, onComplete, onExit }: Slide
         <Tutorial
           imageCount={images.length}
           isStarting={isBeginning}
-          hasError={beginFailed}
+          error={beginError}
           onStart={handleBegin}
           onCancel={handleExit}
         />

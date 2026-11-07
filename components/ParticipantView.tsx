@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Slideshow, { type ViewTimes } from './Slideshow'
+import Slideshow, { type BeginResult, type ViewTimes } from './Slideshow'
 
 interface Experiment {
   id: string
@@ -55,18 +55,19 @@ export default function ParticipantView() {
 
   // 튜토리얼에서 시작을 눌렀을 때 호출된다. 튜토리얼만 보고 나가면 기록이 남지 않는다.
   // 기록 없이 진행하면 결과가 남지 않으므로 저장에 실패하면 시작하지 않는다.
-  async function createExperiment() {
+  async function createExperiment(participantId: string): Promise<BeginResult> {
     try {
       const res = await fetch('/api/experiments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageOrder: shuffledImages }),
+        body: JSON.stringify({ imageOrder: shuffledImages, participantId }),
       })
-      if (!res.ok) return false
+      if (res.status === 409) return 'duplicate'
+      if (!res.ok) return 'error'
       setLastExperiment(await res.json())
-      return true
+      return 'ok'
     } catch {
-      return false
+      return 'error'
     }
   }
 
@@ -130,7 +131,9 @@ export default function ParticipantView() {
         {lastExperiment && (
           <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-neutral-900 to-neutral-700 rounded-2xl px-14 py-7 shadow-[0_14px_34px_rgba(0,0,0,0.22)]">
             <p className="text-sm text-white/70">평가지에 아래 번호를 적어주세요</p>
-            <p className="text-5xl font-bold tracking-tight text-white">{lastExperiment.label}</p>
+            <p className="text-5xl font-bold tracking-tight text-white break-all">
+              {lastExperiment.label}
+            </p>
             <p className="text-xs text-white/50 font-mono">기록 ID: {lastExperiment.id}</p>
           </div>
         )}
@@ -160,9 +163,6 @@ export default function ParticipantView() {
   return (
     <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-8">
       <div className="text-center">
-        <h2 className="text-5xl sm:text-6xl font-bold tracking-tight text-neutral-900 mb-6">
-          실험 시작
-        </h2>
         <p className="text-lg leading-relaxed text-neutral-600">
           버튼을 누르면 튜토리얼이 시작됩니다. 보고 진행해주세요.
           <br />

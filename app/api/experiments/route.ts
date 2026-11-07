@@ -44,20 +44,28 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { imageOrder } = body as { imageOrder: string[] }
+    const { imageOrder, participantId } = body as {
+      imageOrder: string[]
+      participantId: unknown
+    }
+    const label = typeof participantId === 'string' ? participantId.trim() : ''
 
     if (!Array.isArray(imageOrder) || imageOrder.length === 0) {
       return Response.json({ error: '이미지 순서가 없습니다.' }, { status: 400 })
     }
+    if (!label || label.length > 30) {
+      return Response.json({ error: '실험자 고유 번호가 없습니다.' }, { status: 400 })
+    }
 
     const experiments = await readExperiments()
-    // 일부 기록을 지워도 번호가 겹치지 않도록 남은 기록의 최대 번호 다음을 쓴다.
-    const index =
-      Math.max(0, ...experiments.map((e) => Number(e.label.replace(/\D/g, '')) || 0)) + 1
+    // 다른 사람의 결과와 섞이지 않게 완료된 번호는 막고, 중단한 번호는 다시 쓸 수 있게 둔다.
+    if (experiments.some((e) => e.label === label && e.completed === true)) {
+      return Response.json({ error: '이미 완료된 번호입니다.' }, { status: 409 })
+    }
 
     const newExp: Experiment = {
       id: `exp_${Date.now()}`,
-      label: `실험 ${index}`,
+      label,
       date: new Date().toISOString(),
       imageOrder,
     }
