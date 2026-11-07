@@ -44,6 +44,9 @@ export default function Interview({ onSubmit }: InterviewProps) {
           <h2 className="text-4xl font-bold tracking-tight text-neutral-900">인터뷰</h2>
           <p className="text-lg text-neutral-600 mt-3">
             이미지를 본 경험을 떠올리며 각 문항에 자유롭게 적어주세요.
+            <br />
+            구두 인터뷰를 했거나 적을 내용이 없으신 분은 &lsquo;없음&rsquo;으로 적고 맨 아래 완료 버튼을
+            눌러주세요.
           </p>
         </header>
 
