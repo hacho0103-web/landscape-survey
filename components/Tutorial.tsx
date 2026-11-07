@@ -11,7 +11,7 @@ interface TutorialProps {
 
 const STEPS = (imageCount: number) => [
   `이미지가 한 장씩 나타납니다. 모두 ${imageCount}장입니다.`,
-  '이미지를 보면서 오른쪽의 세 문항에 1~5 중 하나씩 응답하세요.',
+  '이미지를 보면서 오른쪽의 세 문항에 하나씩 응답하세요.',
   '오래 고민하지 말고 첫인상대로 선택하세요.',
   '세 문항에 모두 응답하면 다음 이미지로 넘어갈 수 있습니다. 시간제한은 없습니다.',
   '마지막 이미지까지 마치면 완료를 누르고, 이어서 인터뷰 문항에 답을 적어주세요.',
@@ -68,10 +68,14 @@ export default function Tutorial({ imageCount, onStart, onCancel }: TutorialProp
 
       <aside className="w-[380px] shrink-0 overflow-y-auto border-l border-white/10 p-6">
         <p className="text-2xl leading-tight text-yellow-300 mb-5">
-          이곳에서 세 문항에 응답합니다 ▼
+          세 문항에 응답하고 아래 버튼이나 ←, → 키로 넘깁니다 ▼
         </p>
         <div className="rounded-lg p-3 ring-2 ring-yellow-300" aria-hidden="true">
           <RatingPanel values={RATING_QUESTIONS.map(() => null)} />
+          <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+            <span className={markedControl}>← 이전</span>
+            <span className={markedControl}>다음 →</span>
+          </div>
         </div>
       </aside>
 
@@ -84,10 +88,6 @@ export default function Tutorial({ imageCount, onStart, onCancel }: TutorialProp
           지금 보고 있는 이미지 번호입니다
           <br />▼
         </p>
-        <p className="text-right">
-          버튼이나 ←, → 키로 이미지를 넘깁니다
-          <br />▼
-        </p>
       </div>
       </div>
 
@@ -98,10 +98,6 @@ export default function Tutorial({ imageCount, onStart, onCancel }: TutorialProp
           <span className="text-sm font-semibold text-white justify-self-center rounded-md px-3 py-1 ring-2 ring-yellow-300">
             이미지 1 / {imageCount}
           </span>
-          <div className="flex gap-2 justify-self-end">
-            <span className={markedControl}>← 이전</span>
-            <span className={markedControl}>다음 →</span>
-          </div>
         </div>
       </div>
     </>

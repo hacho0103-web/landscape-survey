@@ -11,12 +11,6 @@ interface RatingPanelProps {
 export default function RatingPanel({ values, onChange }: RatingPanelProps) {
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-5 gap-1 text-center text-xs leading-tight text-white/60">
-        {RATING_SCALE.map((label) => (
-          <span key={label}>{label}</span>
-        ))}
-      </div>
-
       {RATING_QUESTIONS.map((question, questionIndex) => (
         <fieldset key={question} className="flex flex-col gap-2">
           <legend className="text-base text-white mb-2">{question}</legend>
@@ -29,16 +23,15 @@ export default function RatingPanel({ values, onChange }: RatingPanelProps) {
                   key={label}
                   type="button"
                   disabled={!onChange}
-                  aria-label={`${question} ${label}`}
                   aria-pressed={isSelected}
                   onClick={() => onChange?.(questionIndex, value)}
-                  className={`h-10 rounded-md border text-sm transition-colors ${
+                  className={`h-16 px-1 rounded-md border text-sm leading-tight transition-colors ${
                     isSelected
                       ? 'bg-white border-white text-black font-semibold'
-                      : 'border-white/25 text-white/70 enabled:hover:border-white/70 enabled:hover:text-white'
+                      : 'border-white/30 text-white/85 enabled:hover:border-white/80 enabled:hover:text-white'
                   }`}
                 >
-                  {value}
+                  {label}
                 </button>
               )
             })}

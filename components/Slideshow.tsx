@@ -160,7 +160,9 @@ export default function Slideshow({
 
   const progress = images.length > 0 ? ((currentIndex + 1) / images.length) * 100 : 0
   const buttonClass =
-    'px-4 py-1.5 text-sm text-white/60 border border-white/20 rounded-md hover:text-white hover:border-white/50 transition-colors disabled:opacity-30 disabled:hover:text-white/60 disabled:hover:border-white/20'
+    'px-4 py-2 text-sm text-white/70 border border-white/25 rounded-md hover:text-white hover:border-white/50 transition-colors disabled:opacity-30 disabled:hover:text-white/70 disabled:hover:border-white/25'
+  const primaryButtonClass =
+    'px-4 py-2 text-sm font-semibold bg-white text-black rounded-md hover:bg-white/90 transition-colors disabled:bg-white/20 disabled:text-white/50'
 
   // 전체화면이 끊기지 않도록 튜토리얼도 같은 컨테이너 안에서 보여준다.
   return (
@@ -196,7 +198,29 @@ export default function Slideshow({
       {/* 이미지를 가리지 않도록 평가표는 이미지 영역 밖의 오른쪽에 둔다. */}
       <aside className="w-[380px] shrink-0 overflow-y-auto border-l border-white/10 p-6 flex flex-col justify-center">
         <RatingPanel values={currentValues} onChange={handleRatingChange} />
-        <p className={`mt-6 text-sm text-white/60 ${isCurrentRated ? 'invisible' : ''}`}>
+        {confirming === 'complete' ? (
+          <div className="mt-6 flex flex-col gap-3">
+            <p className="text-center text-white">실험을 완료할까요?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setConfirming(null)} className={buttonClass}>
+                ← 돌아가기
+              </button>
+              <button onClick={handleComplete} autoFocus className={primaryButtonClass}>
+                완료
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 grid grid-cols-2 gap-2">
+            <button onClick={handlePrev} disabled={isFirst} className={buttonClass}>
+              ← 이전
+            </button>
+            <button onClick={handleNext} disabled={!isCurrentRated} className={primaryButtonClass}>
+              {isLast ? '완료' : '다음 →'}
+            </button>
+          </div>
+        )}
+        <p className={`mt-3 text-center text-sm text-white/60 ${isCurrentRated ? 'invisible' : ''}`}>
           세 문항에 모두 응답하면 다음으로 넘어갈 수 있습니다.
         </p>
       </aside>
@@ -207,20 +231,14 @@ export default function Slideshow({
         <div className="h-0.5 bg-white/10">
           <div className="h-full bg-white/40" style={{ width: `${progress}%` }} />
         </div>
-        {confirming ? (
+        {confirming === 'exit' ? (
           <div className="h-12 px-6 flex items-center justify-between">
             <button onClick={() => setConfirming(null)} className={buttonClass}>
               ← 돌아가기
             </button>
-            <span className="text-sm text-white">
-              {confirming === 'complete' ? '실험을 완료할까요?' : '실험을 나갈까요?'}
-            </span>
-            <button
-              onClick={confirming === 'complete' ? handleComplete : handleExit}
-              autoFocus
-              className="px-4 py-1.5 text-sm font-semibold bg-white text-black rounded-md hover:bg-white/90 transition-colors"
-            >
-              {confirming === 'complete' ? '완료' : '나가기'}
+            <span className="text-sm text-white">실험을 나갈까요?</span>
+            <button onClick={handleExit} autoFocus className={primaryButtonClass}>
+              나가기
             </button>
           </div>
         ) : (
@@ -234,14 +252,6 @@ export default function Slideshow({
             <span className="text-sm font-semibold text-white text-center">
               이미지 {currentIndex + 1} / {images.length}
             </span>
-            <div className="flex gap-2 justify-self-end">
-              <button onClick={handlePrev} disabled={isFirst} className={buttonClass}>
-                ← 이전
-              </button>
-              <button onClick={handleNext} disabled={!isCurrentRated} className={buttonClass}>
-                {isLast ? '완료' : '다음 →'}
-              </button>
-            </div>
           </div>
         )}
       </div>
