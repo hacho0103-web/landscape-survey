@@ -17,7 +17,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-input[type='checkbox'] {
+input[type='checkbox'],
+input[type='radio'] {
   accent-color: #171717;
 }
 

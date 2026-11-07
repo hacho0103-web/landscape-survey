@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { buildContactRows, buildInterviewRows, buildResponseRows, toCsv } from '@/lib/csv'
+import type { Experiment } from '@/lib/experiments'
 import { INTERVIEW_QUESTIONS } from '@/lib/interview'
+import { RATING_QUESTIONS } from '@/lib/ratings'
 
-interface Experiment {
-  id: string
-  label: string
-  date: string
-  imageOrder: string[]
-  viewTimes?: Record<string, number>
-  completed?: boolean
-  interviewAnswers?: string[]
+function downloadCsv(name: string, csv: string) {
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 function formatSeconds(ms: number) {
@@ -30,6 +32,7 @@ export default function ResearcherView() {
   const [loadingExps, setLoadingExps] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
+  const [contacts, setContacts] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function ResearcherView() {
 
   async function fetchAll() {
     setLoadingExps(true)
-    await Promise.all([fetchImages(), fetchExperiments()])
+    await Promise.all([fetchImages(), fetchExperiments(), fetchContacts()])
     setLoadingExps(false)
   }
 
@@ -49,6 +52,27 @@ export default function ResearcherView() {
       setImages(data.images)
     } catch {
       setImages([])
+    }
+  }
+
+  async function fetchContacts() {
+    try {
+      const res = await fetch('/api/contacts')
+      const data = await res.json()
+      setContacts(data.contacts ?? [])
+    } catch {
+      setContacts([])
+    }
+  }
+
+  async function handleClearContacts() {
+    if (!confirm(`연락처 ${contacts.length}건을 모두 삭제할까요? 되돌릴 수 없습니다.`)) return
+    try {
+      const res = await fetch('/api/contacts', { method: 'DELETE' })
+      if (res.ok) setContacts([])
+      else alert('삭제에 실패했습니다.')
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.')
     }
   }
 
@@ -321,12 +345,29 @@ export default function ResearcherView() {
       <section className="card p-7">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold tracking-tight text-neutral-900">실험 기록</h2>
-          <button
-            onClick={fetchAll}
-            className="btn-secondary text-sm px-3 py-1.5"
-          >
-            새로고침
-          </button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              onClick={() =>
+                downloadCsv('응답', toCsv(buildResponseRows([...experiments].reverse())))
+              }
+              disabled={experiments.length === 0}
+              className="btn-secondary text-sm px-3 py-1.5"
+            >
+              응답 CSV
+            </button>
+            <button
+              onClick={() =>
+                downloadCsv('인터뷰', toCsv(buildInterviewRows([...experiments].reverse())))
+              }
+              disabled={experiments.length === 0}
+              className="btn-secondary text-sm px-3 py-1.5"
+            >
+              인터뷰 CSV
+            </button>
+            <button onClick={fetchAll} className="btn-secondary text-sm px-3 py-1.5">
+              새로고침
+            </button>
+          </div>
         </div>
 
         {loadingExps ? (
@@ -406,8 +447,25 @@ export default function ResearcherView() {
 
                 {expandedId === exp.id && (
                   <div className="border-t border-neutral-100 px-4 py-3 bg-neutral-50">
+                    {exp.demographics && (
+                      <div className="mb-4 pb-4 border-b border-neutral-200">
+                        <p className="text-xs font-medium text-neutral-500 mb-2">
+                          인적사항 · 동의
+                        </p>
+                        <p className="text-sm text-neutral-700 leading-relaxed">
+                          {exp.demographics.gender} · 만 {exp.demographics.age}세 ·{' '}
+                          {exp.demographics.jobOther
+                            ? `기타(${exp.demographics.jobOther})`
+                            : exp.demographics.job}{' '}
+                          · 관련 전공·업무 경험 {exp.demographics.experience} · 방문 빈도{' '}
+                          {exp.demographics.visitFrequency} · 인터뷰 녹음{' '}
+                          {exp.recordingConsent ? '동의' : '미동의'}
+                        </p>
+                      </div>
+                    )}
                     <p className="text-xs font-medium text-neutral-500 mb-2">
-                      표시 순서 (1번부터) · 이미지별 관람 시간
+                      표시 순서 (1번부터) · 응답 ({RATING_QUESTIONS.map((q) => q.replace('.', '')).join(' / ')}) ·
+                      관람 시간
                     </p>
                     <ol className="flex flex-col gap-1">
                       {exp.imageOrder.map((img, idx) => (
@@ -416,8 +474,11 @@ export default function ResearcherView() {
                             {idx + 1}
                           </span>
                           <span className="font-mono text-neutral-700 truncate">{img}</span>
+                          <span className="ml-auto font-mono text-neutral-800 flex-shrink-0">
+                            {exp.ratings?.[img]?.join(' / ') ?? '-'}
+                          </span>
                           {exp.viewTimes && (
-                            <span className="ml-auto font-mono text-neutral-500 flex-shrink-0">
+                            <span className="w-16 text-right font-mono text-neutral-500 flex-shrink-0">
                               {formatSeconds(exp.viewTimes[img] ?? 0)}
                             </span>
                           )}
@@ -447,6 +508,40 @@ export default function ResearcherView() {
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      {/* 동의서대로 실험 기록과 연결하지 않고 따로 보여준다. */}
+      <section className="card p-7">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">
+            답례품 연락처 ({contacts.length}건)
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => downloadCsv('연락처', toCsv(buildContactRows(contacts)))}
+              disabled={contacts.length === 0}
+              className="btn-secondary text-sm px-3 py-1.5"
+            >
+              연락처 CSV
+            </button>
+            <button
+              onClick={handleClearContacts}
+              disabled={contacts.length === 0}
+              className="btn-danger text-sm px-3 py-1.5"
+            >
+              전체 삭제
+            </button>
+          </div>
+        </div>
+        {contacts.length === 0 ? (
+          <p className="text-neutral-400 text-sm">아직 저장된 연락처가 없습니다.</p>
+        ) : (
+          <ul className="flex flex-col gap-1 text-sm text-neutral-700">
+            {contacts.map((contact, index) => (
+              <li key={index}>{contact}</li>
+            ))}
+          </ul>
         )}
       </section>
     </div>

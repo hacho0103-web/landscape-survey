@@ -1,34 +1,49 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { RATING_QUESTIONS } from '@/lib/ratings'
+import RatingPanel from './RatingPanel'
 import Tutorial from './Tutorial'
 
 export type ViewTimes = Record<string, number>
-export type BeginResult = 'ok' | 'duplicate' | 'error'
+export type Ratings = Record<string, number[]>
 
 interface SlideshowProps {
   images: string[]
-  onBegin: (participantId: string) => Promise<BeginResult>
-  onComplete: (viewTimes: ViewTimes) => void
-  onExit: (viewTimes: ViewTimes) => void
+  onRate: (filename: string, values: number[]) => void
+  onComplete: (viewTimes: ViewTimes, ratings: Ratings) => void
+  onExit: (viewTimes: ViewTimes, ratings: Ratings) => void
 }
 
 function imageUrl(filename: string) {
   return `/api/uploads/${encodeURIComponent(filename)}`
 }
 
-export default function Slideshow({ images, onBegin, onComplete, onExit }: SlideshowProps) {
+const EMPTY_RATING: (number | null)[] = RATING_QUESTIONS.map(() => null)
+
+function isRated(values: (number | null)[] | undefined): values is number[] {
+  return !!values && values.every((value) => value !== null)
+}
+
+export default function Slideshow({
+  images,
+  onRate,
+  onComplete,
+  onExit,
+}: SlideshowProps) {
   const [hasBegun, setHasBegun] = useState(false)
-  const [isBeginning, setIsBeginning] = useState(false)
-  const [beginError, setBeginError] = useState<string | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [confirming, setConfirming] = useState<'complete' | 'exit' | null>(null)
+  const [responses, setResponses] = useState<Record<string, (number | null)[]>>({})
   const containerRef = useRef<HTMLDivElement>(null)
   const viewTimesRef = useRef<ViewTimes>({})
   const viewingRef = useRef<{ filename: string; since: number } | null>(null)
 
   const isFirst = currentIndex === 0
   const isLast = currentIndex === images.length - 1
+  const currentImage = images[currentIndex]
+  const currentValues = responses[currentImage] ?? EMPTY_RATING
+  const isCurrentRated = isRated(currentValues)
 
   const requestFullscreen = useCallback(() => {
     const el = containerRef.current
@@ -59,41 +74,57 @@ export default function Slideshow({ images, onBegin, onComplete, onExit }: Slide
     viewingRef.current = null
   }, [])
 
+  // 이미지를 떠날 때마다 저장해서 중간에 창이 닫혀도 응답이 남게 한다.
+  const saveCurrentRating = useCallback(() => {
+    const values = responses[currentImage]
+    if (isRated(values)) onRate(currentImage, values)
+  }, [responses, currentImage, onRate])
+
+  const finishedRatings = useCallback(() => {
+    const ratings: Ratings = {}
+    for (const [filename, values] of Object.entries(responses)) {
+      if (isRated(values)) ratings[filename] = values
+    }
+    return ratings
+  }, [responses])
+
   const handleNext = useCallback(() => {
+    if (!isCurrentRated) return
     if (isLast) {
       setConfirming('complete')
     } else {
       stopViewing()
+      saveCurrentRating()
       setCurrentIndex((index) => index + 1)
     }
-  }, [isLast, stopViewing])
+  }, [isCurrentRated, isLast, stopViewing, saveCurrentRating])
 
   const handlePrev = useCallback(() => {
     if (isFirst) return
     stopViewing()
+    saveCurrentRating()
     setCurrentIndex((index) => index - 1)
-  }, [isFirst, stopViewing])
+  }, [isFirst, stopViewing, saveCurrentRating])
 
   const handleComplete = useCallback(() => {
     stopViewing()
     exitFullscreen()
-    onComplete(viewTimesRef.current)
-  }, [stopViewing, exitFullscreen, onComplete])
+    onComplete(viewTimesRef.current, finishedRatings())
+  }, [stopViewing, exitFullscreen, onComplete, finishedRatings])
 
   const handleExit = useCallback(() => {
     stopViewing()
     exitFullscreen()
-    onExit(viewTimesRef.current)
-  }, [stopViewing, exitFullscreen, onExit])
+    onExit(viewTimesRef.current, finishedRatings())
+  }, [stopViewing, exitFullscreen, onExit, finishedRatings])
 
-  async function handleBegin(participantId: string) {
-    setIsBeginning(true)
-    setBeginError(null)
-    const result = await onBegin(participantId)
-    if (result === 'ok') setHasBegun(true)
-    else if (result === 'duplicate') setBeginError('이미 실험을 완료한 번호입니다. 번호를 확인해주세요.')
-    else setBeginError('실험 기록을 만들지 못했습니다. 다시 시도해주세요.')
-    setIsBeginning(false)
+  function handleRatingChange(questionIndex: number, value: number) {
+    setResponses((prev) => ({
+      ...prev,
+      [currentImage]: (prev[currentImage] ?? EMPTY_RATING).map((current, index) =>
+        index === questionIndex ? value : current
+      ),
+    }))
   }
 
   useEffect(() => {
@@ -141,14 +172,13 @@ export default function Slideshow({ images, onBegin, onComplete, onExit }: Slide
       {!hasBegun ? (
         <Tutorial
           imageCount={images.length}
-          isStarting={isBeginning}
-          error={beginError}
-          onStart={handleBegin}
+          onStart={() => setHasBegun(true)}
           onCancel={handleExit}
         />
       ) : (
         <>
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 flex">
+      <div className="flex-1 min-w-0">
         <img
           key={currentIndex}
           src={imageUrl(images[currentIndex])}
@@ -161,6 +191,15 @@ export default function Slideshow({ images, onBegin, onComplete, onExit }: Slide
             }
           }}
         />
+      </div>
+
+      {/* 이미지를 가리지 않도록 평가표는 이미지 영역 밖의 오른쪽에 둔다. */}
+      <aside className="w-[380px] shrink-0 overflow-y-auto border-l border-white/10 p-6 flex flex-col justify-center">
+        <RatingPanel values={currentValues} onChange={handleRatingChange} />
+        <p className={`mt-6 text-sm text-white/60 ${isCurrentRated ? 'invisible' : ''}`}>
+          세 문항에 모두 응답하면 다음으로 넘어갈 수 있습니다.
+        </p>
+      </aside>
       </div>
 
       {/* 이미지를 가리지 않도록 조작 요소는 이미지 영역 밖의 하단 띠에 둔다. */}
@@ -199,7 +238,7 @@ export default function Slideshow({ images, onBegin, onComplete, onExit }: Slide
               <button onClick={handlePrev} disabled={isFirst} className={buttonClass}>
                 ← 이전
               </button>
-              <button onClick={handleNext} className={buttonClass}>
+              <button onClick={handleNext} disabled={!isCurrentRated} className={buttonClass}>
                 {isLast ? '완료' : '다음 →'}
               </button>
             </div>

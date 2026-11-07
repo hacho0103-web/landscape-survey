@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import ContactForm from './ContactForm'
+import Intake, { type IntakeData, type IntakeResult } from './Intake'
 import Interview from './Interview'
-import Slideshow, { type BeginResult, type ViewTimes } from './Slideshow'
+import Slideshow, { type Ratings, type ViewTimes } from './Slideshow'
 
 interface Experiment {
   id: string
@@ -22,13 +24,17 @@ function shuffle<T>(array: T[]): T[] {
 
 export default function ParticipantView() {
   const [images, setImages] = useState<string[]>([])
+  const [isInIntake, setIsInIntake] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
   const [shuffledImages, setShuffledImages] = useState<string[]>([])
   const [isInterviewing, setIsInterviewing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [lastExperiment, setLastExperiment] = useState<Experiment | null>(null)
   const [loading, setLoading] = useState(true)
-  const [pendingViewTimes, setPendingViewTimes] = useState<ViewTimes | null>(null)
+  const [pendingResult, setPendingResult] = useState<{
+    viewTimes: ViewTimes
+    ratings: Ratings
+  } | null>(null)
   const [saveFailed, setSaveFailed] = useState(false)
 
   useEffect(() => {
@@ -52,34 +58,46 @@ export default function ParticipantView() {
     if (images.length === 0) return
     setShuffledImages(shuffle(images))
     setIsComplete(false)
-    setIsRunning(true)
+    setIsInIntake(true)
   }
 
-  // 튜토리얼에서 시작을 눌렀을 때 호출된다. 튜토리얼만 보고 나가면 기록이 남지 않는다.
+  // 동의와 인적사항을 마친 뒤에 기록을 만든다. 동의하지 않으면 아무것도 저장하지 않는다.
   // 기록 없이 진행하면 결과가 남지 않으므로 저장에 실패하면 시작하지 않는다.
-  async function createExperiment(participantId: string): Promise<BeginResult> {
+  async function handleIntakeSubmit(data: IntakeData): Promise<IntakeResult> {
     try {
       const res = await fetch('/api/experiments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageOrder: shuffledImages, participantId }),
+        body: JSON.stringify({ ...data, researchConsent: true, imageOrder: shuffledImages }),
       })
       if (res.status === 409) return 'duplicate'
       if (!res.ok) return 'error'
       setLastExperiment(await res.json())
-      return 'ok'
     } catch {
       return 'error'
     }
+    setIsInIntake(false)
+    setIsRunning(true)
+    return 'ok'
   }
 
-  async function saveViewTimes(viewTimes: ViewTimes, completed: boolean) {
+  function saveRating(filename: string, values: number[]) {
+    if (!lastExperiment) return
+    // 실패해도 실험이 끝날 때 전체 응답을 다시 보내므로 진행을 막지 않는다.
+    fetch(`/api/experiments/${lastExperiment.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: { filename, values } }),
+    }).catch(() => {})
+  }
+
+  async function saveResult(viewTimes: ViewTimes, ratings: Ratings, completed: boolean) {
     if (!lastExperiment) return false
     try {
       const res = await fetch(`/api/experiments/${lastExperiment.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ viewTimes, completed }),
+        body: JSON.stringify({ viewTimes, ratings, completed }),
       })
       return res.ok || res.status === 409 // 409: 이미 저장됨
     } catch {
@@ -87,11 +105,11 @@ export default function ParticipantView() {
     }
   }
 
-  async function handleComplete(viewTimes: ViewTimes) {
+  async function handleComplete(viewTimes: ViewTimes, ratings: Ratings) {
     setIsRunning(false)
     setIsInterviewing(true)
-    setPendingViewTimes(viewTimes)
-    setSaveFailed(!(await saveViewTimes(viewTimes, true)))
+    setPendingResult({ viewTimes, ratings })
+    setSaveFailed(!(await saveResult(viewTimes, ratings, true)))
   }
 
   async function handleInterviewSubmit(interviewAnswers: string[]) {
@@ -112,29 +130,33 @@ export default function ParticipantView() {
   }
 
   async function handleRetrySave() {
-    if (!pendingViewTimes) return
-    setSaveFailed(!(await saveViewTimes(pendingViewTimes, true)))
+    if (!pendingResult) return
+    setSaveFailed(!(await saveResult(pendingResult.viewTimes, pendingResult.ratings, true)))
   }
 
-  function handleExit(viewTimes: ViewTimes) {
+  function handleExit(viewTimes: ViewTimes, ratings: Ratings) {
     setIsRunning(false)
     setIsComplete(false)
-    saveViewTimes(viewTimes, false)
+    saveResult(viewTimes, ratings, false)
     setLastExperiment(null)
   }
 
   function handleReset() {
     setIsComplete(false)
     setLastExperiment(null)
-    setPendingViewTimes(null)
+    setPendingResult(null)
     setSaveFailed(false)
+  }
+
+  if (isInIntake) {
+    return <Intake onSubmit={handleIntakeSubmit} onCancel={() => setIsInIntake(false)} />
   }
 
   if (isRunning) {
     return (
       <Slideshow
         images={shuffledImages}
-        onBegin={createExperiment}
+        onRate={saveRating}
         onComplete={handleComplete}
         onExit={handleExit}
       />
@@ -153,7 +175,7 @@ export default function ParticipantView() {
         </h2>
         {lastExperiment && (
           <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-neutral-900 to-neutral-700 rounded-2xl px-14 py-7 shadow-[0_14px_34px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-white/70">평가지에 아래 번호를 적어주세요</p>
+            <p className="text-sm text-white/70">실험자 고유 번호</p>
             <p className="text-5xl font-bold tracking-tight text-white break-all">
               {lastExperiment.label}
             </p>
@@ -163,7 +185,7 @@ export default function ParticipantView() {
         {saveFailed && (
           <div className="flex flex-col items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-6 py-4">
             <p className="text-sm text-red-700">
-              관람 시간 저장에 실패했습니다. 화면을 닫지 말고 다시 시도해주세요.
+              응답 저장에 실패했습니다. 화면을 닫지 말고 다시 시도해주세요.
             </p>
             <button
               onClick={handleRetrySave}
@@ -173,6 +195,7 @@ export default function ParticipantView() {
             </button>
           </div>
         )}
+        {lastExperiment && <ContactForm experimentId={lastExperiment.id} />}
         <button
           onClick={handleReset}
           className="btn-secondary mt-2 px-6 py-3"
@@ -184,47 +207,48 @@ export default function ParticipantView() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 sm:py-28 gap-6">
-      <div className="text-center">
-        <h2 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight text-balance text-neutral-900">
-          대규모 업무시설 저층부 보행자 경관 인식 조사 실험
-        </h2>
-        <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-          연세대학교 일반대학원 건축공학과
-          <br />
-          CAT 건축도시디자인 연구실 조하은 연구원
-        </p>
-        <p className="mt-8 text-base leading-relaxed text-neutral-600">
-          버튼을 누르면 튜토리얼이 시작됩니다. 보고 진행해주세요.
-          <br />
-          시간제한 없이 ←, → 키나 화면 아래 버튼으로 이미지를 넘기고, 나가기 버튼으로 끝낼 수 있습니다.
-        </p>
-      </div>
-
-      {loading ? (
-        <p className="text-neutral-400">이미지 불러오는 중...</p>
-      ) : images.length === 0 ? (
-        <div className="card text-center px-8 py-6">
-          <p className="text-neutral-900 font-medium">업로드된 이미지가 없습니다.</p>
-          <p className="text-neutral-500 text-sm mt-1">
-            연구자 탭에서 이미지를 먼저 업로드해주세요.
+    <div className="flex flex-col items-center min-h-[calc(100vh-10rem)]">
+      <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
+        <div className="text-center">
+          <h2 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight text-balance text-neutral-900">
+            대규모 업무시설 저층부 보행자 경관 인식 조사 실험
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-neutral-600">
+            버튼을 누르면 연구 안내와 실험이 시작됩니다.
+            <br />
+            시간제한 없이 ←, → 키나 화면 아래 버튼으로 이미지를 넘기고, 나가기 버튼으로 끝낼 수 있습니다.
           </p>
         </div>
-      ) : (
-        <>
-          <button
-            onClick={startExperiment}
-            className="btn-primary px-10 py-3 text-base font-semibold"
-          >
-            실험 시작
-          </button>
-          <p className="text-sm text-neutral-500">
-            준비된 이미지{' '}
-            <span className="font-semibold text-neutral-900">{images.length}</span>개 · ESC 키를
-            누르면 실험을 중단합니다.
-          </p>
-        </>
-      )}
+
+        {loading ? (
+          <p className="text-neutral-400">이미지 불러오는 중...</p>
+        ) : images.length === 0 ? (
+          <div className="card text-center px-8 py-6">
+            <p className="text-neutral-900 font-medium">업로드된 이미지가 없습니다.</p>
+            <p className="text-neutral-500 text-sm mt-1">
+              연구자 탭에서 이미지를 먼저 업로드해주세요.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={startExperiment}
+              className="btn-primary px-10 py-3 text-base font-semibold"
+            >
+              실험 시작
+            </button>
+            <p className="text-sm text-neutral-500">
+              준비된 이미지 {images.length}개 · ESC 키를 누르면 실험을 중단합니다.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <p className="text-center text-sm leading-relaxed text-neutral-500">
+        연세대학교 일반대학원 건축공학과
+        <br />
+        CAT 건축도시디자인 연구실 조하은 연구원
+      </p>
     </div>
   )
 }
