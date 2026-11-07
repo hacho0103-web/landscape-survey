@@ -8,12 +8,16 @@ interface SlideshowProps {
   onExit: () => void
 }
 
+function imageUrl(filename: string) {
+  return `/api/uploads/${encodeURIComponent(filename)}`
+}
+
 export default function Slideshow({ images, onComplete, onExit }: SlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isDone, setIsDone] = useState(false)
-  const [isBlackScreen, setIsBlackScreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isFirst = currentIndex === 0
+  const isLast = currentIndex === images.length - 1
 
   const requestFullscreen = useCallback(() => {
     const el = containerRef.current
@@ -31,112 +35,81 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
 
   useEffect(() => {
     requestFullscreen()
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-      exitFullscreen()
-    }
+    return () => exitFullscreen()
   }, [requestFullscreen, exitFullscreen])
 
   const handleNext = useCallback(() => {
-    const nextIndex = currentIndex + 1
-    if (nextIndex >= images.length) {
-      setIsDone(true)
+    if (isLast) {
       exitFullscreen()
       onComplete()
     } else {
-      setCurrentIndex(nextIndex)
-      setIsBlackScreen(false)
+      setCurrentIndex((index) => index + 1)
     }
-  }, [currentIndex, images.length, onComplete, exitFullscreen])
+  }, [isLast, onComplete, exitFullscreen])
 
-  useEffect(() => {
-    if (isDone || isBlackScreen) return
-    if (currentIndex >= images.length) return
-    timerRef.current = setTimeout(() => {
-      setIsBlackScreen(true)
-    }, 10000)
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [currentIndex, images.length, isDone, isBlackScreen])
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((index) => Math.max(0, index - 1))
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         exitFullscreen()
         onExit()
+        return
       }
+      // 키를 누르고 있어도 한 장씩만 넘어가도록 자동 반복은 무시한다.
+      if (e.repeat) return
+      if (e.key === 'ArrowRight') handleNext()
+      if (e.key === 'ArrowLeft') handlePrev()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onExit, exitFullscreen])
+  }, [onExit, exitFullscreen, handleNext, handlePrev])
 
-  const progress = images.length > 0 ? ((currentIndex) / images.length) * 100 : 0
+  // 넘길 때 빈 화면이 보이지 않도록 앞뒤 이미지를 미리 불러온다.
+  useEffect(() => {
+    for (const index of [currentIndex - 1, currentIndex + 1]) {
+      if (images[index]) new Image().src = imageUrl(images[index])
+    }
+  }, [currentIndex, images])
+
+  const progress = images.length > 0 ? ((currentIndex + 1) / images.length) * 100 : 0
+  const buttonClass =
+    'px-4 py-1.5 text-sm text-white/60 border border-white/20 rounded-md hover:text-white hover:border-white/50 transition-colors disabled:opacity-30 disabled:hover:text-white/60 disabled:hover:border-white/20'
 
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50"
+      className="fixed inset-0 bg-black flex flex-col z-50"
       style={{ width: '100vw', height: '100vh' }}
     >
-      {!isDone && currentIndex < images.length ? (
-        isBlackScreen ? (
-          /* 검은 화면 + 다음 버튼 */
-          <button
-            onClick={handleNext}
-            className="px-8 py-4 bg-white text-black text-lg font-semibold rounded-lg hover:bg-white/90 transition-colors"
-          >
-            {currentIndex + 1 < images.length ? '다음 이미지' : '완료'}
+      <div className="flex-1 min-h-0">
+        <img
+          key={currentIndex}
+          src={imageUrl(images[currentIndex])}
+          alt={`이미지 ${currentIndex + 1}`}
+          className="w-full h-full object-contain"
+        />
+      </div>
+
+      {/* 이미지를 가리지 않도록 조작 요소는 이미지 영역 밖의 하단 띠에 둔다. */}
+      <div className="shrink-0">
+        <div className="h-0.5 bg-white/10">
+          <div className="h-full bg-white/40" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="h-12 px-6 flex items-center justify-between">
+          <button onClick={handlePrev} disabled={isFirst} className={buttonClass}>
+            ← 이전
           </button>
-        ) : (
-          <>
-            {/* Progress bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-white/10">
-              <div
-                className="h-full bg-white/50 transition-none"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-
-            {/* 순서 번호 - 왼쪽 위 */}
-            <div className="absolute top-4 left-6 text-white text-2xl font-bold drop-shadow-lg">
-              {currentIndex + 1}
-            </div>
-
-            {/* Image count - 오른쪽 위 */}
-            <div className="absolute top-4 right-6 text-white/60 text-sm font-mono">
-              {currentIndex + 1} / {images.length}
-            </div>
-
-            {/* Image */}
-            <img
-              key={currentIndex}
-              src={`/api/uploads/${encodeURIComponent(images[currentIndex])}`}
-              alt={`이미지 ${currentIndex + 1}`}
-              className="max-w-full max-h-full object-contain"
-              style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
-            />
-
-            {/* 10초 타이머 바 */}
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-              <div
-                key={currentIndex}
-                className="h-full bg-white/70"
-                style={{
-                  animation: 'timer-progress 10s linear forwards',
-                }}
-              />
-            </div>
-          </>
-        )
-      ) : null}
-
-      <style>{`
-        @keyframes timer-progress {
-          from { width: 0% }
-          to { width: 100% }
-        }
-      `}</style>
+          <span className="text-sm font-mono text-white/60">
+            {currentIndex + 1} / {images.length}
+          </span>
+          <button onClick={handleNext} className={buttonClass}>
+            {isLast ? '완료' : '다음 →'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

@@ -118,7 +118,9 @@ export default function ParticipantView() {
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">실험 시작</h2>
         <p className="text-gray-500">
-          버튼을 누르면 이미지가 무작위 순서로 전체화면에 3초씩 표시됩니다.
+          버튼을 누르면 이미지가 무작위 순서로 전체화면에 표시됩니다.
+          <br />
+          시간제한 없이 ←, → 키나 화면 아래 버튼으로 이미지를 넘길 수 있습니다.
         </p>
       </div>
 
