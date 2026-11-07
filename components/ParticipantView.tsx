@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import ContactForm from './ContactForm'
-import Intake, { type IntakeData, type IntakeResult } from './Intake'
+import Intake, { type IntakeData } from './Intake'
 import Interview from './Interview'
 import Slideshow, { type Ratings, type ViewTimes } from './Slideshow'
 
@@ -36,6 +35,9 @@ export default function ParticipantView() {
     ratings: Ratings
   } | null>(null)
   const [saveFailed, setSaveFailed] = useState(false)
+  // 동의서대로 실험을 끝까지 마친 경우에만 저장하도록 완료 전까지 화면에만 둔다.
+  const [contact, setContact] = useState('')
+  const [contactFailed, setContactFailed] = useState(false)
 
   useEffect(() => {
     fetchImages()
@@ -63,22 +65,22 @@ export default function ParticipantView() {
 
   // 동의와 인적사항을 마친 뒤에 기록을 만든다. 동의하지 않으면 아무것도 저장하지 않는다.
   // 기록 없이 진행하면 결과가 남지 않으므로 저장에 실패하면 시작하지 않는다.
-  async function handleIntakeSubmit(data: IntakeData): Promise<IntakeResult> {
+  async function handleIntakeSubmit({ contact: enteredContact, ...data }: IntakeData) {
     try {
       const res = await fetch('/api/experiments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, researchConsent: true, imageOrder: shuffledImages }),
       })
-      if (res.status === 409) return 'duplicate'
-      if (!res.ok) return 'error'
+      if (!res.ok) return false
       setLastExperiment(await res.json())
     } catch {
-      return 'error'
+      return false
     }
+    setContact(enteredContact)
     setIsInIntake(false)
     setIsRunning(true)
-    return 'ok'
+    return true
   }
 
   function saveRating(filename: string, values: number[]) {
@@ -126,7 +128,26 @@ export default function ParticipantView() {
     }
     setIsInterviewing(false)
     setIsComplete(true)
+    setContactFailed(!(await saveContact()))
     return true
+  }
+
+  async function saveContact() {
+    if (!contact || !lastExperiment) return true
+    try {
+      const res = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ experimentId: lastExperiment.id, contact }),
+      })
+      return res.ok || res.status === 409 // 409: 이미 저장됨
+    } catch {
+      return false
+    }
+  }
+
+  async function handleRetryContact() {
+    setContactFailed(!(await saveContact()))
   }
 
   async function handleRetrySave() {
@@ -139,6 +160,7 @@ export default function ParticipantView() {
     setIsComplete(false)
     saveResult(viewTimes, ratings, false)
     setLastExperiment(null)
+    setContact('')
   }
 
   function handleReset() {
@@ -146,6 +168,8 @@ export default function ParticipantView() {
     setLastExperiment(null)
     setPendingResult(null)
     setSaveFailed(false)
+    setContact('')
+    setContactFailed(false)
   }
 
   if (isInIntake) {
@@ -175,7 +199,7 @@ export default function ParticipantView() {
         </h2>
         {lastExperiment && (
           <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-neutral-900 to-neutral-700 rounded-2xl px-14 py-7 shadow-[0_14px_34px_rgba(0,0,0,0.22)]">
-            <p className="text-sm text-white/70">실험자 고유 번호</p>
+            <p className="text-sm text-white/70">실험 번호</p>
             <p className="text-5xl font-bold tracking-tight text-white break-all">
               {lastExperiment.label}
             </p>
@@ -195,7 +219,19 @@ export default function ParticipantView() {
             </button>
           </div>
         )}
-        {lastExperiment && <ContactForm experimentId={lastExperiment.id} />}
+        {contactFailed && (
+          <div className="flex flex-col items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-6 py-4">
+            <p className="text-sm text-red-700">
+              연락처 저장에 실패했습니다. 화면을 닫지 말고 다시 시도해주세요.
+            </p>
+            <button
+              onClick={handleRetryContact}
+              className="text-sm font-medium text-red-700 underline"
+            >
+              다시 저장
+            </button>
+          </div>
+        )}
         <button
           onClick={handleReset}
           className="btn-secondary mt-2 px-6 py-3"

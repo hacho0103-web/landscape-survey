@@ -20,20 +20,18 @@ import {
   type Demographics,
 } from '@/lib/demographics'
 
-export type IntakeResult = 'ok' | 'duplicate' | 'error'
-
 export interface IntakeData {
-  participantId: string
+  contact: string
   recordingConsent: boolean
   demographics: Demographics
 }
 
 interface IntakeProps {
-  onSubmit: (data: IntakeData) => Promise<IntakeResult>
+  onSubmit: (data: IntakeData) => Promise<boolean>
   onCancel: () => void
 }
 
-type Step = 'consent' | 'declined' | 'participant' | 'demographics'
+type Step = 'consent' | 'declined' | 'contact' | 'demographics'
 
 function ChoiceGroup({
   name,
@@ -73,8 +71,7 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
   const [step, setStep] = useState<Step>('consent')
   const [researchChoice, setResearchChoice] = useState('')
   const [recordingChoice, setRecordingChoice] = useState('')
-  const [participantId, setParticipantId] = useState('')
-  const [idError, setIdError] = useState<string | null>(null)
+  const [contact, setContact] = useState('')
   const [gender, setGender] = useState('')
   const [age, setAge] = useState('')
   const [job, setJob] = useState('')
@@ -99,13 +96,11 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
 
   function handleConsent(e: FormEvent) {
     e.preventDefault()
-    if (canLeaveConsent) setStep(declined ? 'declined' : 'participant')
+    if (canLeaveConsent) setStep(declined ? 'declined' : 'contact')
   }
 
-  function handleParticipant(e: FormEvent) {
+  function handleContact(e: FormEvent) {
     e.preventDefault()
-    if (!participantId.trim()) return
-    setIdError(null)
     setStep('demographics')
   }
 
@@ -115,8 +110,8 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
 
     setIsSubmitting(true)
     setSubmitFailed(false)
-    const result = await onSubmit({
-      participantId: participantId.trim(),
+    const saved = await onSubmit({
+      contact: contact.trim(),
       recordingConsent: recordingChoice === RECORDING_CONSENT.agree,
       demographics: {
         gender,
@@ -127,15 +122,10 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
         visitFrequency,
       },
     })
-    if (result === 'ok') return
+    if (saved) return
 
     setIsSubmitting(false)
-    if (result === 'duplicate') {
-      setIdError('이미 실험을 완료한 번호입니다. 번호를 확인해주세요.')
-      setStep('participant')
-    } else {
-      setSubmitFailed(true)
-    }
+    setSubmitFailed(true)
   }
 
   return (
@@ -218,25 +208,28 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
           </div>
         )}
 
-        {step === 'participant' && (
-          <form onSubmit={handleParticipant} className="flex flex-col gap-6 max-w-md mx-auto py-16">
+        {step === 'contact' && (
+          <form onSubmit={handleContact} className="flex flex-col gap-6 max-w-lg mx-auto py-16">
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-neutral-900">
-              실험자 고유 번호
+              답례품 받을 연락처
             </h2>
             <div className="card p-7 flex flex-col gap-3">
-              <label htmlFor="participant-id" className="text-neutral-700">
-                안내받은 고유 번호를 입력해주세요.
+              <label htmlFor="contact" className="leading-relaxed text-neutral-800">
+                답례품을 받을 연락처나 이메일 주소를 적어주세요. (선택사항)
               </label>
               <input
-                id="participant-id"
-                value={participantId}
-                onChange={(e) => setParticipantId(e.target.value)}
-                maxLength={30}
+                id="contact"
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                maxLength={100}
                 autoFocus
                 autoComplete="off"
                 className={`${textField} text-lg`}
               />
-              {idError && <p className="text-sm text-red-600">{idError}</p>}
+              <p className="text-sm leading-relaxed text-neutral-500">
+                적지 않아도 넘어갈 수 있습니다. 연락처는 실험을 끝까지 마친 경우에만 저장되며, 실험
+                자료와 분리해 보관하고, 지급 목적으로만 사용하며, 지급 완료 3개월 후 파기합니다.
+              </p>
             </div>
             <div className="flex justify-end gap-3">
               <button
@@ -246,11 +239,7 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
               >
                 이전
               </button>
-              <button
-                type="submit"
-                disabled={!participantId.trim()}
-                className="btn-primary px-10 py-3 font-semibold"
-              >
+              <button type="submit" className="btn-primary px-10 py-3 font-semibold">
                 다음
               </button>
             </div>
@@ -346,7 +335,7 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
               )}
               <button
                 type="button"
-                onClick={() => setStep('participant')}
+                onClick={() => setStep('contact')}
                 className="btn-secondary px-6 py-3"
               >
                 이전

@@ -24,7 +24,7 @@ function formatStatus(exp: Experiment) {
 export function buildResponseRows(experiments: Experiment[]): Cell[][] {
   const rows: Cell[][] = [
     [
-      '참여자번호',
+      '실험번호',
       '실험일시',
       '상태',
       '녹음동의',
@@ -71,7 +71,7 @@ export function buildResponseRows(experiments: Experiment[]): Cell[][] {
 }
 
 export function buildInterviewRows(experiments: Experiment[]): Cell[][] {
-  const rows: Cell[][] = [['참여자번호', ...INTERVIEW_QUESTIONS]]
+  const rows: Cell[][] = [['실험번호', ...INTERVIEW_QUESTIONS]]
   for (const exp of experiments) {
     if (exp.interviewAnswers) rows.push([exp.label, ...exp.interviewAnswers])
   }
