@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import Tutorial from './Tutorial'
 
 export type ViewTimes = Record<string, number>
 
 interface SlideshowProps {
   images: string[]
+  onBegin: () => Promise<boolean>
   onComplete: (viewTimes: ViewTimes) => void
   onExit: (viewTimes: ViewTimes) => void
 }
@@ -14,7 +16,10 @@ function imageUrl(filename: string) {
   return `/api/uploads/${encodeURIComponent(filename)}`
 }
 
-export default function Slideshow({ images, onComplete, onExit }: SlideshowProps) {
+export default function Slideshow({ images, onBegin, onComplete, onExit }: SlideshowProps) {
+  const [hasBegun, setHasBegun] = useState(false)
+  const [isBeginning, setIsBeginning] = useState(false)
+  const [beginFailed, setBeginFailed] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [confirming, setConfirming] = useState<'complete' | 'exit' | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -80,8 +85,20 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
     onExit(viewTimesRef.current)
   }, [stopViewing, exitFullscreen, onExit])
 
+  async function handleBegin() {
+    setIsBeginning(true)
+    setBeginFailed(false)
+    if (await onBegin()) setHasBegun(true)
+    else setBeginFailed(true)
+    setIsBeginning(false)
+  }
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!hasBegun) {
+        if (e.key === 'Escape') handleExit()
+        return
+      }
       // 완료 확인 중에는 화살표로 끝나지 않게 하고, 돌아가기만 허용한다.
       if (confirming) {
         if (e.key === 'Escape' || e.key === 'ArrowLeft') setConfirming(null)
@@ -98,11 +115,11 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [confirming, handleExit, handleNext, handlePrev])
+  }, [hasBegun, confirming, handleExit, handleNext, handlePrev])
 
   // 넘길 때 빈 화면이 보이지 않도록 앞뒤 이미지를 미리 불러온다.
   useEffect(() => {
-    for (const index of [currentIndex - 1, currentIndex + 1]) {
+    for (const index of [currentIndex - 1, currentIndex, currentIndex + 1]) {
       if (images[index]) new Image().src = imageUrl(images[index])
     }
   }, [currentIndex, images])
@@ -111,12 +128,23 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
   const buttonClass =
     'px-4 py-1.5 text-sm text-white/60 border border-white/20 rounded-md hover:text-white hover:border-white/50 transition-colors disabled:opacity-30 disabled:hover:text-white/60 disabled:hover:border-white/20'
 
+  // 전체화면이 끊기지 않도록 튜토리얼도 같은 컨테이너 안에서 보여준다.
   return (
     <div
       ref={containerRef}
       className="fixed inset-0 bg-black flex flex-col z-50"
       style={{ width: '100vw', height: '100vh' }}
     >
+      {!hasBegun ? (
+        <Tutorial
+          imageCount={images.length}
+          isStarting={isBeginning}
+          hasError={beginFailed}
+          onStart={handleBegin}
+          onCancel={handleExit}
+        />
+      ) : (
+        <>
       <div className="flex-1 min-h-0">
         <img
           key={currentIndex}
@@ -161,8 +189,8 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
             >
               나가기
             </button>
-            <span className="text-sm font-mono text-white/60 text-center">
-              {currentIndex + 1} / {images.length}
+            <span className="text-sm font-semibold text-white text-center">
+              이미지 {currentIndex + 1} / {images.length}
             </span>
             <div className="flex gap-2 justify-self-end">
               <button onClick={handlePrev} disabled={isFirst} className={buttonClass}>
@@ -175,6 +203,8 @@ export default function Slideshow({ images, onComplete, onExit }: SlideshowProps
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   )
 }

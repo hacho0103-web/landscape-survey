@@ -26,8 +26,6 @@ export default function ParticipantView() {
   const [isComplete, setIsComplete] = useState(false)
   const [lastExperiment, setLastExperiment] = useState<Experiment | null>(null)
   const [loading, setLoading] = useState(true)
-  const [starting, setStarting] = useState(false)
-  const [startError, setStartError] = useState(false)
   const [pendingViewTimes, setPendingViewTimes] = useState<ViewTimes | null>(null)
   const [saveFailed, setSaveFailed] = useState(false)
 
@@ -48,31 +46,28 @@ export default function ParticipantView() {
     }
   }
 
-  async function startExperiment() {
+  function startExperiment() {
     if (images.length === 0) return
-    setStarting(true)
-    setStartError(false)
-    const ordered = shuffle(images)
-    setShuffledImages(ordered)
+    setShuffledImages(shuffle(images))
+    setIsComplete(false)
+    setIsRunning(true)
+  }
 
-    // 기록 없이 진행하면 결과가 남지 않으므로 저장에 실패하면 시작하지 않는다.
+  // 튜토리얼에서 시작을 눌렀을 때 호출된다. 튜토리얼만 보고 나가면 기록이 남지 않는다.
+  // 기록 없이 진행하면 결과가 남지 않으므로 저장에 실패하면 시작하지 않는다.
+  async function createExperiment() {
     try {
       const res = await fetch('/api/experiments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageOrder: ordered }),
+        body: JSON.stringify({ imageOrder: shuffledImages }),
       })
-      if (!res.ok) throw new Error('save failed')
+      if (!res.ok) return false
       setLastExperiment(await res.json())
+      return true
     } catch {
-      setStartError(true)
-      setStarting(false)
-      return
+      return false
     }
-
-    setIsComplete(false)
-    setStarting(false)
-    setIsRunning(true)
   }
 
   async function saveViewTimes(viewTimes: ViewTimes, completed: boolean) {
@@ -105,6 +100,7 @@ export default function ParticipantView() {
     setIsRunning(false)
     setIsComplete(false)
     saveViewTimes(viewTimes, false)
+    setLastExperiment(null)
   }
 
   function handleReset() {
@@ -118,6 +114,7 @@ export default function ParticipantView() {
     return (
       <Slideshow
         images={shuffledImages}
+        onBegin={createExperiment}
         onComplete={handleComplete}
         onExit={handleExit}
       />
@@ -130,9 +127,11 @@ export default function ParticipantView() {
         <div className="text-5xl">완료</div>
         <h2 className="text-2xl font-bold text-gray-800">실험이 완료되었습니다</h2>
         {lastExperiment && (
-          <p className="text-gray-500 text-sm">
-            기록 ID: <span className="font-mono">{lastExperiment.id}</span>
-          </p>
+          <div className="flex flex-col items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-8 py-4">
+            <p className="text-sm text-blue-700">평가지에 아래 번호를 적어주세요</p>
+            <p className="text-3xl font-bold text-blue-900">{lastExperiment.label}</p>
+            <p className="text-xs text-gray-500 font-mono">기록 ID: {lastExperiment.id}</p>
+          </div>
         )}
         {saveFailed && (
           <div className="flex flex-col items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-6 py-4">
@@ -162,7 +161,7 @@ export default function ParticipantView() {
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">실험 시작</h2>
         <p className="text-gray-500">
-          버튼을 누르면 이미지가 무작위 순서로 전체화면에 표시됩니다.
+          버튼을 누르면 튜토리얼이 시작됩니다. 보고 진행해주세요.
           <br />
           시간제한 없이 ←, → 키나 화면 아래 버튼으로 이미지를 넘기고, 나가기 버튼으로 끝낼 수 있습니다.
         </p>
@@ -184,16 +183,10 @@ export default function ParticipantView() {
           </div>
           <button
             onClick={startExperiment}
-            disabled={starting}
             className="px-10 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
           >
-            {starting ? '준비 중...' : '실험 시작'}
+            실험 시작
           </button>
-          {startError && (
-            <p className="text-sm text-red-600">
-              실험 기록을 만들지 못했습니다. 다시 시도해주세요.
-            </p>
-          )}
           <p className="text-gray-400 text-xs">ESC 키를 누르면 실험을 중단합니다.</p>
         </>
       )}
