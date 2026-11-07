@@ -56,7 +56,7 @@ export const RESEARCH_CONSENT = {
 }
 
 export const RECORDING_CONSENT = {
-  title: '인터뷰 녹음 동의',
+  title: "인터뷰 녹음 동의 (인터뷰 녹음을 하지 않을 경우 '녹음에 동의하지 않습니다' 선택)",
   statement:
     '인터뷰 녹음의 목적과 자료 관리 방법에 관한 안내를 이해하였으며, 음성 녹음에 동의합니다.',
   agree: '녹음에 동의합니다.',
