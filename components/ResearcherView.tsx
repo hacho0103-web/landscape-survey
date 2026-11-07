@@ -207,11 +207,11 @@ export default function ResearcherView() {
   return (
     <div className="flex flex-col gap-8">
       {/* 이미지 업로드 섹션 */}
-      <section className="bg-white border border-gray-200 rounded-xl p-6">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">이미지 관리</h2>
+      <section className="card p-7">
+        <h2 className="text-xl font-bold tracking-tight text-neutral-900 mb-4">이미지 관리</h2>
 
         <div
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+          className="border border-dashed border-neutral-300 rounded-xl p-10 text-center bg-neutral-50 hover:border-neutral-900 transition-colors cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
@@ -238,11 +238,11 @@ export default function ResearcherView() {
             onChange={handleUpload}
           />
           {uploading ? (
-            <p className="text-blue-600 font-medium">업로드 중...</p>
+            <p className="text-neutral-900 font-medium">업로드 중...</p>
           ) : (
             <>
-              <p className="text-gray-500 font-medium">클릭하거나 이미지를 드래그하여 업로드</p>
-              <p className="text-gray-400 text-sm mt-1">JPG, PNG, WebP 등 지원</p>
+              <p className="text-neutral-500 font-medium">클릭하거나 이미지를 드래그하여 업로드</p>
+              <p className="text-neutral-400 text-sm mt-1">JPG, PNG, WebP 등 지원</p>
             </>
           )}
         </div>
@@ -261,10 +261,10 @@ export default function ResearcherView() {
           <div className="mt-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-medium text-neutral-600">
                   현재 이미지 ({images.length}개)
                 </p>
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={allImagesSelected}
@@ -276,7 +276,7 @@ export default function ResearcherView() {
               <button
                 onClick={handleDeleteSelectedImages}
                 disabled={selectedImageCount === 0}
-                className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-40 disabled:hover:bg-red-500"
+                className="btn-danger text-sm px-3 py-1.5"
               >
                 선택 삭제{selectedImageCount > 0 ? ` (${selectedImageCount}개)` : ''}
               </button>
@@ -294,7 +294,7 @@ export default function ResearcherView() {
                   <img
                     src={`/api/uploads/${encodeURIComponent(img)}`}
                     alt={img}
-                    className="w-full aspect-video object-cover rounded-lg border border-gray-200"
+                    className="w-full aspect-video object-cover rounded-xl border border-black/5"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors rounded-lg flex items-center justify-center">
                     <button
@@ -302,12 +302,12 @@ export default function ResearcherView() {
                         e.stopPropagation()
                         handleDeleteImage(img)
                       }}
-                      className="opacity-0 group-hover:opacity-100 bg-red-500 text-white text-xs px-2 py-1 rounded transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 bg-white text-red-600 text-xs font-medium px-2.5 py-1 rounded-md transition-opacity"
                     >
                       삭제
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 truncate">{img}</p>
+                  <p className="text-xs text-neutral-500 mt-1 truncate">{img}</p>
                 </div>
               ))}
             </div>
@@ -316,32 +316,32 @@ export default function ResearcherView() {
       </section>
 
       {/* 실험 기록 섹션 */}
-      <section className="bg-white border border-gray-200 rounded-xl p-6">
+      <section className="card p-7">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-800">실험 기록</h2>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">실험 기록</h2>
           <button
             onClick={fetchAll}
-            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            className="btn-secondary text-sm px-3 py-1.5"
           >
             새로고침
           </button>
         </div>
 
         {loadingExps ? (
-          <p className="text-gray-400 text-sm">불러오는 중...</p>
+          <p className="text-neutral-400 text-sm">불러오는 중...</p>
         ) : experiments.length === 0 ? (
-          <p className="text-gray-400 text-sm">아직 실험 기록이 없습니다.</p>
+          <p className="text-neutral-400 text-sm">아직 실험 기록이 없습니다.</p>
         ) : (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between px-4">
-              <label className="flex items-center gap-3 text-sm text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-3 text-sm text-neutral-600 cursor-pointer">
                 <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
                 전체 선택
               </label>
               <button
                 onClick={handleDeleteSelected}
                 disabled={selectedCount === 0}
-                className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-40 disabled:hover:bg-red-500"
+                className="btn-danger text-sm px-3 py-1.5"
               >
                 선택 삭제{selectedCount > 0 ? ` (${selectedCount}건)` : ''}
               </button>
@@ -349,10 +349,10 @@ export default function ResearcherView() {
             {experiments.map((exp) => (
               <div
                 key={exp.id}
-                className="border border-gray-200 rounded-lg overflow-hidden"
+                className="border border-neutral-200 rounded-xl overflow-hidden"
               >
                 <div
-                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-neutral-50 transition-colors"
                   onClick={() =>
                     setExpandedId(expandedId === exp.id ? null : exp.id)
                   }
@@ -365,13 +365,13 @@ export default function ResearcherView() {
                       onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleSelected(exp.id)}
                     />
-                    <span className="font-semibold text-gray-800">{exp.label}</span>
-                    <span className="text-sm text-gray-500">{formatDate(exp.date)}</span>
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                    <span className="font-semibold text-neutral-800">{exp.label}</span>
+                    <span className="text-sm text-neutral-500">{formatDate(exp.date)}</span>
+                    <span className="text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
                       {exp.imageOrder.length}개 이미지
                     </span>
                     {exp.viewTimes ? (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full">
                         총 {formatSeconds(totalViewTime(exp))}
                       </span>
                     ) : null}
@@ -391,33 +391,33 @@ export default function ResearcherView() {
                     >
                       삭제
                     </button>
-                    <span className="text-gray-400 text-sm">
+                    <span className="text-neutral-400 text-sm">
                       {expandedId === exp.id ? '▲' : '▼'}
                     </span>
                   </div>
                 </div>
 
                 {expandedId === exp.id && (
-                  <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-                    <p className="text-xs font-medium text-gray-500 mb-2">
+                  <div className="border-t border-neutral-100 px-4 py-3 bg-neutral-50">
+                    <p className="text-xs font-medium text-neutral-500 mb-2">
                       표시 순서 (1번부터) · 이미지별 관람 시간
                     </p>
                     <ol className="flex flex-col gap-1">
                       {exp.imageOrder.map((img, idx) => (
                         <li key={idx} className="flex items-center gap-3 text-sm">
-                          <span className="w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-600 rounded-full text-xs font-mono flex-shrink-0">
+                          <span className="w-6 h-6 flex items-center justify-center bg-neutral-200 text-neutral-600 rounded-full text-xs font-mono flex-shrink-0">
                             {idx + 1}
                           </span>
-                          <span className="font-mono text-gray-700 truncate">{img}</span>
+                          <span className="font-mono text-neutral-700 truncate">{img}</span>
                           {exp.viewTimes && (
-                            <span className="ml-auto font-mono text-gray-500 flex-shrink-0">
+                            <span className="ml-auto font-mono text-neutral-500 flex-shrink-0">
                               {formatSeconds(exp.viewTimes[img] ?? 0)}
                             </span>
                           )}
                         </li>
                       ))}
                     </ol>
-                    <p className="text-xs text-gray-400 mt-3 font-mono">ID: {exp.id}</p>
+                    <p className="text-xs text-neutral-400 mt-3 font-mono">ID: {exp.id}</p>
                   </div>
                 )}
               </div>

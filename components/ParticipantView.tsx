@@ -123,14 +123,15 @@ export default function ParticipantView() {
 
   if (isComplete) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-6">
-        <div className="text-5xl">완료</div>
-        <h2 className="text-2xl font-bold text-gray-800">실험이 완료되었습니다</h2>
+      <div className="flex flex-col items-center justify-center py-20 gap-6">
+        <h2 className="text-4xl font-bold tracking-tight text-neutral-900">
+          실험이 완료되었습니다
+        </h2>
         {lastExperiment && (
-          <div className="flex flex-col items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-8 py-4">
-            <p className="text-sm text-blue-700">평가지에 아래 번호를 적어주세요</p>
-            <p className="text-3xl font-bold text-blue-900">{lastExperiment.label}</p>
-            <p className="text-xs text-gray-500 font-mono">기록 ID: {lastExperiment.id}</p>
+          <div className="flex flex-col items-center gap-2 bg-gradient-to-br from-neutral-900 to-neutral-700 rounded-2xl px-14 py-7 shadow-[0_14px_34px_rgba(0,0,0,0.22)]">
+            <p className="text-sm text-white/70">평가지에 아래 번호를 적어주세요</p>
+            <p className="text-5xl font-bold tracking-tight text-white">{lastExperiment.label}</p>
+            <p className="text-xs text-white/50 font-mono">기록 ID: {lastExperiment.id}</p>
           </div>
         )}
         {saveFailed && (
@@ -148,7 +149,7 @@ export default function ParticipantView() {
         )}
         <button
           onClick={handleReset}
-          className="mt-4 px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          className="btn-secondary mt-2 px-6 py-3"
         >
           처음으로
         </button>
@@ -157,10 +158,12 @@ export default function ParticipantView() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 gap-8">
+    <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-8">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">실험 시작</h2>
-        <p className="text-gray-500">
+        <h2 className="text-5xl sm:text-6xl font-bold tracking-tight text-neutral-900 mb-6">
+          실험 시작
+        </h2>
+        <p className="text-lg leading-relaxed text-neutral-600">
           버튼을 누르면 튜토리얼이 시작됩니다. 보고 진행해주세요.
           <br />
           시간제한 없이 ←, → 키나 화면 아래 버튼으로 이미지를 넘기고, 나가기 버튼으로 끝낼 수 있습니다.
@@ -168,26 +171,27 @@ export default function ParticipantView() {
       </div>
 
       {loading ? (
-        <p className="text-gray-400">이미지 불러오는 중...</p>
+        <p className="text-neutral-400">이미지 불러오는 중...</p>
       ) : images.length === 0 ? (
-        <div className="text-center bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <p className="text-yellow-700 font-medium">업로드된 이미지가 없습니다.</p>
-          <p className="text-yellow-600 text-sm mt-1">
+        <div className="card text-center px-8 py-6">
+          <p className="text-neutral-900 font-medium">업로드된 이미지가 없습니다.</p>
+          <p className="text-neutral-500 text-sm mt-1">
             연구자 탭에서 이미지를 먼저 업로드해주세요.
           </p>
         </div>
       ) : (
         <>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg px-6 py-3 text-sm text-gray-600">
-            준비된 이미지 <span className="font-bold text-gray-900">{images.length}</span>개
-          </div>
           <button
             onClick={startExperiment}
-            className="px-10 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
+            className="btn-primary px-12 py-4 text-lg font-semibold"
           >
             실험 시작
           </button>
-          <p className="text-gray-400 text-xs">ESC 키를 누르면 실험을 중단합니다.</p>
+          <p className="text-sm text-neutral-500">
+            준비된 이미지{' '}
+            <span className="font-semibold text-neutral-900">{images.length}</span>개 · ESC 키를
+            누르면 실험을 중단합니다.
+          </p>
         </>
       )}
     </div>

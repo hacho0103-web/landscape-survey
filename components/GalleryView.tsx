@@ -16,7 +16,7 @@ export default function GalleryView() {
   return (
     <>
       {images.length === 0 ? (
-        <div className="flex items-center justify-center py-24 text-gray-400">
+        <div className="flex items-center justify-center py-24 text-neutral-400">
           업로드된 이미지가 없습니다.
         </div>
       ) : (
@@ -25,7 +25,7 @@ export default function GalleryView() {
             <button
               key={img}
               onClick={() => setSelected(img)}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 hover:border-blue-400 transition-colors focus:outline-none"
+              className="group relative aspect-square overflow-hidden rounded-xl border border-black/5 shadow-[0_4px_14px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_22px_rgba(0,0,0,0.12)] transition-shadow focus:outline-none"
             >
               <img
                 src={`/api/uploads/${encodeURIComponent(img)}`}

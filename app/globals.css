@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #f5f5f4;
   --foreground: #171717;
 }
 
@@ -13,5 +13,40 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+}
+
+input[type='checkbox'] {
+  accent-color: #171717;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-black/5 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)];
+  }
+
+  .btn-primary {
+    @apply rounded-xl bg-neutral-900 font-medium text-white shadow-[0_6px_16px_rgba(0,0,0,0.18)] transition-all hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-40 disabled:shadow-none;
+  }
+
+  .btn-secondary {
+    @apply rounded-lg border border-neutral-200 bg-white text-neutral-700 transition-colors hover:border-neutral-400 hover:text-neutral-900 disabled:opacity-40;
+  }
+
+  .btn-danger {
+    @apply rounded-lg border border-red-200 bg-white text-red-600 transition-colors hover:border-red-400 disabled:border-neutral-200 disabled:text-neutral-400 disabled:hover:border-neutral-200;
+  }
+
+  /* 참고 시안의 은은한 세로결 무늬. 가운데로 갈수록 사라진다. */
+  .hero-texture {
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.035) 0 1px,
+      transparent 1px 7px
+    );
+    mask-image: radial-gradient(ellipse 60% 100% at 50% 0%, transparent 45%, black 100%),
+      linear-gradient(to bottom, black, transparent);
+    mask-composite: intersect;
+  }
 }

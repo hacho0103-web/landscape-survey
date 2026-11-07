@@ -8,50 +8,52 @@ import GalleryView from '@/components/GalleryView'
 
 type Tab = 'participant' | 'researcher' | 'gallery'
 
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'participant', label: '실험자' },
+  { id: 'researcher', label: '연구자' },
+  { id: 'gallery', label: '갤러리' },
+]
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>('participant')
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-800">도시 경관 이미지 실험</h1>
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setTab('participant')}
-              className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
-                tab === 'participant'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+    <div className="relative min-h-screen flex flex-col">
+      <div className="hero-texture absolute inset-x-0 top-0 h-96 pointer-events-none" aria-hidden="true" />
+
+      <header className="relative">
+        <div className="max-w-5xl mx-auto px-6 py-5 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="flex items-center gap-3 text-lg font-semibold tracking-tight text-neutral-900">
+            <span
+              className="w-8 h-8 rounded-full bg-neutral-900 flex items-end justify-center gap-0.5 pb-2 shadow-[0_4px_10px_rgba(0,0,0,0.2)]"
+              aria-hidden="true"
             >
-              실험자
-            </button>
-            <button
-              onClick={() => setTab('researcher')}
-              className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
-                tab === 'researcher'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              연구자
-            </button>
-            <button
-              onClick={() => setTab('gallery')}
-              className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
-                tab === 'gallery'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              갤러리
-            </button>
-          </div>
+              <span className="w-1 h-2 bg-white rounded-sm" />
+              <span className="w-1 h-3.5 bg-white rounded-sm" />
+              <span className="w-1 h-2.5 bg-white rounded-sm" />
+            </span>
+            도시 경관 이미지 실험
+          </h1>
+          <nav className="flex gap-1 bg-neutral-200/60 rounded-xl p-1">
+            {TABS.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                aria-current={tab === id ? 'page' : undefined}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+                  tab === id
+                    ? 'bg-white text-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                    : 'text-neutral-500 hover:text-neutral-800'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
+      <main className="relative flex-1 max-w-5xl mx-auto w-full px-6 py-8">
         {tab === 'participant' && <ParticipantView />}
         {tab === 'researcher' && (
           <PasswordGate>

@@ -37,8 +37,8 @@ export default function PasswordGate({ children }: { children: ReactNode }) {
   if (unlocked) return <>{children}</>
 
   return (
-    <section className="max-w-sm mx-auto bg-white border border-gray-200 rounded-xl p-6">
-      <h2 className="text-lg font-bold text-gray-800 mb-4">비밀번호 확인</h2>
+    <section className="card max-w-sm mx-auto mt-12 p-8">
+      <h2 className="text-xl font-bold tracking-tight text-neutral-900 mb-5">비밀번호 확인</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           type="password"
@@ -48,13 +48,13 @@ export default function PasswordGate({ children }: { children: ReactNode }) {
           aria-label="비밀번호"
           autoComplete="off"
           autoFocus
-          className="border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:border-blue-400"
+          className="border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:outline-none focus:border-neutral-900 transition-colors"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={submitting || password.length === 0}
-          className="bg-blue-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="btn-primary px-4 py-3"
         >
           {submitting ? '확인 중...' : '확인'}
         </button>
