@@ -16,8 +16,15 @@ export const JOB_QUESTION = {
 }
 
 export const EXPERIENCE_QUESTION = {
-  question: '귀하는 건축·도시·조경·실내건축 등 관련 분야의 전공 또는 업무 경험이 있습니까?',
-  options: ['없음', '있음'],
+  question:
+    '귀하는 건축·도시·조경·실내건축 등 관련 분야의 전공 또는 업무 경험이 있습니까? (여러 항목에 해당하면 가장 아래 항목을 선택해 주십시오.)',
+  options: [
+    '없음',
+    '관련 분야 전공 중(학부·대학원)',
+    '관련 분야 전공 졸업, 실무 경험 없음',
+    '실무 경험 3년 미만',
+    '실무 경험 3년 이상',
+  ],
 }
 
 export const VISIT_QUESTION = {
