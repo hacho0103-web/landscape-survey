@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Intake, { type IntakeData } from './Intake'
-import Interview from './Interview'
+import Interview, { type InterviewPhoto } from './Interview'
+import { COMPARISON_PAIR, findImage, selectInterviewImages } from '@/lib/interview'
 import Slideshow, { type Ratings, type ViewTimes } from './Slideshow'
 
 interface Experiment {
@@ -27,6 +28,8 @@ export default function ParticipantView() {
   const [isRunning, setIsRunning] = useState(false)
   const [shuffledImages, setShuffledImages] = useState<string[]>([])
   const [isInterviewing, setIsInterviewing] = useState(false)
+  const [interviewPhotos, setInterviewPhotos] = useState<InterviewPhoto[]>([])
+  const [interviewAllEqual, setInterviewAllEqual] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [lastExperiment, setLastExperiment] = useState<Experiment | null>(null)
   const [loading, setLoading] = useState(true)
@@ -108,6 +111,12 @@ export default function ParticipantView() {
   }
 
   async function handleComplete(viewTimes: ViewTimes, ratings: Ratings) {
+    // 참가자가 준 점수로 상위·하위 사진을 고르고, 순위가 드러나지 않게 A~F 자리를 섞는다.
+    const selection = selectInterviewImages(shuffledImages, ratings)
+    setInterviewPhotos(
+      shuffle(selection.images).map(({ filename, group }) => ({ filename, group }))
+    )
+    setInterviewAllEqual(selection.allEqual)
     setIsRunning(false)
     setIsInterviewing(true)
     setPendingResult({ viewTimes, ratings })
@@ -120,7 +129,11 @@ export default function ParticipantView() {
       const res = await fetch(`/api/experiments/${lastExperiment.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interviewAnswers }),
+        body: JSON.stringify({
+          interviewAnswers,
+          interviewImages: interviewPhotos.map((photo) => photo.filename),
+          interviewPair: COMPARISON_PAIR,
+        }),
       })
       if (!res.ok && res.status !== 409) return false
     } catch {
@@ -188,7 +201,14 @@ export default function ParticipantView() {
   }
 
   if (isInterviewing) {
-    return <Interview onSubmit={handleInterviewSubmit} />
+    return (
+      <Interview
+        photos={interviewPhotos}
+        allEqual={interviewAllEqual}
+        pair={COMPARISON_PAIR.map((filename) => findImage(images, filename))}
+        onSubmit={handleInterviewSubmit}
+      />
+    )
   }
 
   if (isComplete) {

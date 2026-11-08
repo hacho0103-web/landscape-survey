@@ -1,5 +1,11 @@
 import type { Experiment } from './experiments'
-import { INTERVIEW_QUESTIONS } from './interview'
+import {
+  COMPARISON_PAIR,
+  INTERVIEW_QUESTIONS,
+  LEGACY_INTERVIEW_QUESTIONS,
+  PHOTO_LETTERS,
+  describeInterviewImages,
+} from './interview'
 
 type Cell = string | number | undefined
 
@@ -70,10 +76,54 @@ export function buildResponseRows(experiments: Experiment[]): Cell[][] {
   return rows
 }
 
+const GROUP_TEXT = { high: '높게', low: '낮게' } as const
+
+function roundMean(mean: number | undefined) {
+  return mean === undefined ? undefined : Math.round(mean * 100) / 100
+}
+
+// 답변과 함께 참가자가 본 사진 A~F(파일명·평균·높음/낮음)와 4번 비교 사진을 남긴다.
 export function buildInterviewRows(experiments: Experiment[]): Cell[][] {
-  const rows: Cell[][] = [['실험번호', ...INTERVIEW_QUESTIONS]]
+  const photoColumns = PHOTO_LETTERS.flatMap((letter) => [
+    `사진${letter}`,
+    `사진${letter}_평균`,
+    `사진${letter}_평가`,
+  ])
+  const rows: Cell[][] = [
+    [
+      '실험번호',
+      ...INTERVIEW_QUESTIONS,
+      '3번_모두같은점수',
+      ...photoColumns,
+      '4번_사진A',
+      '4번_사진B',
+      '이전형식_답변',
+    ],
+  ]
   for (const exp of experiments) {
-    if (exp.interviewAnswers) rows.push([exp.label, ...exp.interviewAnswers])
+    if (!exp.interviewAnswers) continue
+    if (exp.interviewAnswers.length === LEGACY_INTERVIEW_QUESTIONS.length) {
+      const legacy = exp.interviewAnswers
+        .map((answer, i) => `${i + 1}. ${LEGACY_INTERVIEW_QUESTIONS[i]}\n${answer}`)
+        .join('\n\n')
+      rows.push([exp.label, ...INTERVIEW_QUESTIONS.map(() => ''), '', ...photoColumns.map(() => ''), '', '', legacy])
+      continue
+    }
+    const { images, allEqual } = describeInterviewImages(exp)
+    const photoCells = PHOTO_LETTERS.flatMap((_, i) => {
+      const image = images[i]
+      return [image?.filename, roundMean(image?.mean), image?.group && GROUP_TEXT[image.group]]
+    })
+    const pair = exp.interviewPair ?? []
+    rows.push([
+      exp.label,
+      ...exp.interviewAnswers,
+      allEqual ? '예' : '아니오',
+      ...photoCells,
+      pair[0] ?? COMPARISON_PAIR[0],
+      pair[1] ?? COMPARISON_PAIR[1],
+      '',
+    ])
   }
   return rows
 }

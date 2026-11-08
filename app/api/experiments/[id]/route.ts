@@ -1,6 +1,11 @@
 import { requireResearcher } from '@/lib/auth'
 import { readExperiments, updateExperiments, type Experiment } from '@/lib/experiments'
-import { INTERVIEW_QUESTIONS, MAX_ANSWER_LENGTH } from '@/lib/interview'
+import {
+  COMPARISON_PAIR,
+  INTERVIEW_QUESTIONS,
+  MAX_ANSWER_LENGTH,
+  PHOTO_LETTERS,
+} from '@/lib/interview'
 import { isValidRating } from '@/lib/ratings'
 
 export async function GET(_req: Request, ctx: RouteContext<'/api/experiments/[id]'>) {
@@ -39,7 +44,7 @@ export async function PATCH(req: Request, ctx: RouteContext<'/api/experiments/[i
   const body = await req.json().catch(() => null)
 
   try {
-    if (body?.interviewAnswers !== undefined) return await saveInterview(id, body.interviewAnswers)
+    if (body?.interviewAnswers !== undefined) return await saveInterview(id, body)
     if (body?.rating !== undefined) return await saveRating(id, body.rating)
     return await saveResult(id, body)
   } catch (e) {
@@ -103,7 +108,13 @@ async function saveResult(
   })
 }
 
-async function saveInterview(id: string, answers: unknown) {
+async function saveInterview(
+  id: string,
+  body: { interviewAnswers?: unknown; interviewImages?: unknown; interviewPair?: unknown }
+) {
+  const answers = body.interviewAnswers
+  const images = body.interviewImages
+  const pair = body.interviewPair
   const isValid =
     Array.isArray(answers) &&
     answers.length === INTERVIEW_QUESTIONS.length &&
@@ -115,12 +126,31 @@ async function saveInterview(id: string, answers: unknown) {
     )
   if (!isValid) return invalid('잘못된 인터뷰 답변입니다.')
 
+  const isValidImages =
+    Array.isArray(images) &&
+    images.length <= PHOTO_LETTERS.length &&
+    images.every((image) => typeof image === 'string') &&
+    new Set(images).size === images.length
+  const isValidPair =
+    Array.isArray(pair) &&
+    pair.length === COMPARISON_PAIR.length &&
+    pair.every(
+      (image, i) =>
+        typeof image === 'string' && image.normalize('NFC') === COMPARISON_PAIR[i].normalize('NFC')
+    )
+  if (!isValidImages || !isValidPair) return invalid('잘못된 인터뷰 사진입니다.')
+
   return updateExperiments((experiments) => {
     const exp = experiments.find((e) => e.id === id)
     if (!exp) return notFound()
     if (exp.interviewAnswers) return alreadySaved()
+    if (!(images as string[]).every((image) => exp.imageOrder.includes(image))) {
+      return invalid('잘못된 인터뷰 사진입니다.')
+    }
 
     exp.interviewAnswers = answers as string[]
+    exp.interviewImages = images as string[]
+    exp.interviewPair = pair as string[]
     return Response.json({ saved: id })
   })
 }

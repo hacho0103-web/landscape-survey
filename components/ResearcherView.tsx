@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { buildContactRows, buildInterviewRows, buildResponseRows, toCsv } from '@/lib/csv'
 import type { Experiment } from '@/lib/experiments'
-import { INTERVIEW_QUESTIONS } from '@/lib/interview'
+import { describeInterviewImages, interviewQuestionsFor } from '@/lib/interview'
 import { RATING_QUESTIONS } from '@/lib/ratings'
 
 function downloadCsv(name: string, csv: string) {
@@ -485,23 +485,55 @@ export default function ResearcherView() {
                         </li>
                       ))}
                     </ol>
-                    {exp.interviewAnswers && (
-                      <div className="mt-5 border-t border-neutral-200 pt-4">
-                        <p className="text-xs font-medium text-neutral-500 mb-3">인터뷰</p>
-                        <dl className="flex flex-col gap-3 text-sm">
-                          {INTERVIEW_QUESTIONS.map((question, idx) => (
-                            <div key={question}>
-                              <dt className="font-medium text-neutral-800">
-                                {idx + 1}. {question}
-                              </dt>
-                              <dd className="mt-1 text-neutral-600 whitespace-pre-wrap">
-                                {exp.interviewAnswers?.[idx]}
-                              </dd>
+                    {exp.interviewAnswers && (() => {
+                      const { images, allEqual } = describeInterviewImages(exp)
+                      const questions = interviewQuestionsFor(exp.interviewAnswers.length, allEqual)
+                      return (
+                        <div className="mt-5 border-t border-neutral-200 pt-4">
+                          <p className="text-xs font-medium text-neutral-500 mb-3">인터뷰</p>
+                          {images.length > 0 && (
+                            <div className="mb-4 text-sm">
+                              <p className="font-medium text-neutral-800 mb-1">
+                                1~3번 사진{allEqual ? ' (모든 사진 평균이 같아 높고 낮음 표시 없음)' : ''}
+                              </p>
+                              <ul className="flex flex-col gap-0.5">
+                                {images.map((image) => (
+                                  <li key={image.letter} className="flex gap-3 text-neutral-700">
+                                    <span className="w-14 font-semibold">사진 {image.letter}</span>
+                                    <span className="font-mono truncate">{image.filename}</span>
+                                    <span className="ml-auto font-mono flex-shrink-0">
+                                      평균 {image.mean?.toFixed(2) ?? '-'}
+                                    </span>
+                                    <span className="w-10 text-right flex-shrink-0">
+                                      {image.group === 'high' ? '높게' : image.group === 'low' ? '낮게' : '-'}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                              {exp.interviewPair && (
+                                <p className="mt-2 text-neutral-700">
+                                  <span className="font-medium text-neutral-800">4번 사진</span> A{' '}
+                                  <span className="font-mono">{exp.interviewPair[0]}</span> · B{' '}
+                                  <span className="font-mono">{exp.interviewPair[1]}</span>
+                                </p>
+                              )}
                             </div>
-                          ))}
-                        </dl>
-                      </div>
-                    )}
+                          )}
+                          <dl className="flex flex-col gap-3 text-sm">
+                            {questions.map((question, idx) => (
+                              <div key={idx}>
+                                <dt className="font-medium text-neutral-800">
+                                  {idx + 1}. {question}
+                                </dt>
+                                <dd className="mt-1 text-neutral-600 whitespace-pre-wrap">
+                                  {exp.interviewAnswers?.[idx]}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </div>
+                      )
+                    })()}
                     <p className="text-xs text-neutral-400 mt-3 font-mono">ID: {exp.id}</p>
                   </div>
                 )}

@@ -17,6 +17,8 @@ export interface Experiment {
   ratings?: Record<string, number[]> // 이미지별 응답, RATING_QUESTIONS와 같은 순서
   completed?: boolean // false면 중단한 실험
   interviewAnswers?: string[] // INTERVIEW_QUESTIONS와 같은 순서
+  interviewImages?: string[] // 인터뷰 1~3번에 보여준 사진, 사진 A부터 F 순서
+  interviewPair?: string[] // 인터뷰 4번에 보여준 사진 A, B
   contactSaved?: boolean // 연락처 자체는 이 기록과 연결하지 않고 따로 보관한다.
 }
 
