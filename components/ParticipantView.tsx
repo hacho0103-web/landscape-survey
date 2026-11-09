@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Intake, { type IntakeData } from './Intake'
 import Interview, { type InterviewPhoto } from './Interview'
 import { COMPARISON_PAIR, findImage, selectInterviewImages } from '@/lib/interview'
+import ThanksCharacter from './ThanksCharacter'
 import Slideshow, { type Ratings, type ViewTimes } from './Slideshow'
 
 interface Experiment {
@@ -213,7 +214,8 @@ export default function ParticipantView() {
 
   if (isComplete) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-6">
+      <div className="flex flex-col items-center justify-center py-14 gap-6">
+        <ThanksCharacter mood="happy" message="감사합니다!" />
         <h2 className="text-4xl font-bold tracking-tight text-neutral-900">
           실험이 완료되었습니다
         </h2>
@@ -266,6 +268,11 @@ export default function ParticipantView() {
     <div className="flex flex-col items-center min-h-[calc(100vh-10rem)]">
       <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
         <div className="text-center">
+          <p className="inline-block mb-6 rounded-xl border border-neutral-300 bg-neutral-50 px-5 py-3 text-base font-medium leading-relaxed text-neutral-800 text-balance">
+            휴대폰에서는 실험을 진행할 수 없습니다.
+            <br />
+            최소한 컴퓨터 모니터 이상의, 가능한 한 큰 화면에서 참여해 주세요.
+          </p>
           <h2 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight text-balance text-neutral-900">
             대규모 업무시설 저층부 보행자 경관 인식 조사 실험
           </h2>
@@ -287,6 +294,7 @@ export default function ParticipantView() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4">
+            <ThanksCharacter mood="crying" message="대학원생을 도와주세요…" />
             <button
               onClick={startExperiment}
               className="btn-primary px-10 py-3 text-base font-semibold"
