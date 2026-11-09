@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { buildContactRows, buildInterviewRows, buildResponseRows, toCsv } from '@/lib/csv'
+import { contactKey, type ContactEntry } from '@/lib/contact-entry'
 import type { Experiment } from '@/lib/experiments'
 import { describeInterviewImages, interviewQuestionsFor } from '@/lib/interview'
 import { RATING_QUESTIONS } from '@/lib/ratings'
@@ -32,7 +33,7 @@ export default function ResearcherView() {
   const [loadingExps, setLoadingExps] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
-  const [contacts, setContacts] = useState<string[]>([])
+  const [contacts, setContacts] = useState<ContactEntry[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -543,7 +544,7 @@ export default function ResearcherView() {
         )}
       </section>
 
-      {/* 동의서대로 실험 기록과 연결하지 않고 따로 보여준다. */}
+      {/* 응답 기록과 따로 보여주고, 지급·중복 확인용으로 실험 번호만 붙인다. */}
       <section className="card p-7">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold tracking-tight text-neutral-900">
@@ -570,9 +571,23 @@ export default function ResearcherView() {
           <p className="text-neutral-400 text-sm">아직 저장된 연락처가 없습니다.</p>
         ) : (
           <ul className="flex flex-col gap-1 text-sm text-neutral-700">
-            {contacts.map((contact, index) => (
-              <li key={index}>{contact}</li>
-            ))}
+            {contacts.map(({ label, contact }, index) => {
+              const isDuplicate =
+                contacts.filter((other) => contactKey(other.contact) === contactKey(contact)).length > 1
+              return (
+                <li key={index} className="flex items-center gap-3">
+                  <span className="w-20 flex-shrink-0 font-semibold text-neutral-800">
+                    {label || '번호 없음'}
+                  </span>
+                  <span className="break-all">{contact}</span>
+                  {isDuplicate && (
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex-shrink-0">
+                      중복
+                    </span>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>

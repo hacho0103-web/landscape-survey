@@ -1,3 +1,4 @@
+import { contactKey, type ContactEntry } from './contact-entry'
 import type { Experiment } from './experiments'
 import {
   COMPARISON_PAIR,
@@ -128,6 +129,17 @@ export function buildInterviewRows(experiments: Experiment[]): Cell[][] {
   return rows
 }
 
-export function buildContactRows(contacts: string[]): Cell[][] {
-  return [['연락처'], ...contacts.map((contact) => [contact])]
+export function buildContactRows(contacts: ContactEntry[]): Cell[][] {
+  const counts = new Map<string, number>()
+  for (const { contact } of contacts) {
+    counts.set(contactKey(contact), (counts.get(contactKey(contact)) ?? 0) + 1)
+  }
+  return [
+    ['실험번호', '연락처', '중복'],
+    ...contacts.map(({ label, contact }) => [
+      label,
+      contact,
+      (counts.get(contactKey(contact)) ?? 0) > 1 ? '중복' : '',
+    ]),
+  ]
 }

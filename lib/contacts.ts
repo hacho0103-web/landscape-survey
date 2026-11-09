@@ -1,17 +1,18 @@
+import type { ContactEntry } from './contact-entry'
 import { enqueueWrite, readDataFile, writeDataFile } from './experiments'
 
 const CONTACTS_FILE = 'contacts.json'
 
-export async function readContacts(): Promise<string[]> {
-  return (await readDataFile<string[]>(CONTACTS_FILE)) ?? []
+// 응답·인터뷰 자료와는 다른 파일에 보관하고, 답례품 지급과 중복 확인을 위해 실험 번호만 함께 남긴다.
+export async function readContacts(): Promise<ContactEntry[]> {
+  const stored = (await readDataFile<(string | ContactEntry)[]>(CONTACTS_FILE)) ?? []
+  return stored.map((item) => (typeof item === 'string' ? { label: '', contact: item } : item))
 }
 
-// 동의서대로 실험 자료와 분리해서 보관한다. 기록 ID나 시각을 함께 남기지 않고,
-// 저장 순서로 참가자를 짐작할 수 없게 임의의 위치에 넣는다.
-export function addContact(contact: string) {
+export function addContact(entry: ContactEntry) {
   return enqueueWrite(async () => {
-    const contacts = (await readDataFile<string[]>(CONTACTS_FILE)) ?? []
-    contacts.splice(Math.floor(Math.random() * (contacts.length + 1)), 0, contact)
+    const contacts = (await readDataFile<(string | ContactEntry)[]>(CONTACTS_FILE)) ?? []
+    contacts.push(entry)
     await writeDataFile(CONTACTS_FILE, contacts)
   })
 }

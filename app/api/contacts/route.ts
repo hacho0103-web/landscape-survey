@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: '이미 저장되었습니다.' }, { status: 409 })
     }
 
-    await addContact(contact)
+    await addContact({ label: exp.label, contact })
     await updateExperiments((list) => {
       const target = list.find((e) => e.id === experimentId)
       if (target) target.contactSaved = true

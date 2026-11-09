@@ -278,8 +278,6 @@ export default function ParticipantView() {
           </h2>
           <p className="mt-4 text-base leading-relaxed text-neutral-600">
             버튼을 누르면 연구 안내와 실험이 시작됩니다.
-            <br />
-            시간제한 없이 ←, → 키나 화면 아래 버튼으로 이미지를 넘기고, 나가기 버튼으로 끝낼 수 있습니다.
           </p>
         </div>
 
@@ -296,7 +294,7 @@ export default function ParticipantView() {
           <div className="flex flex-col items-center gap-4">
             <button
               onClick={startExperiment}
-              className="btn-primary px-10 py-3 text-base font-semibold"
+              className="btn-primary px-12 py-3.5 text-lg font-semibold"
             >
               실험 시작
             </button>
