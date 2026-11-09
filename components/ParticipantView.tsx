@@ -294,7 +294,6 @@ export default function ParticipantView() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4">
-            <ThanksCharacter mood="crying" message="대학원생을 도와주세요…" />
             <button
               onClick={startExperiment}
               className="btn-primary px-10 py-3 text-base font-semibold"
@@ -308,6 +307,9 @@ export default function ParticipantView() {
         )}
       </div>
 
+      <div className="mb-4">
+        <ThanksCharacter mood="crying" message="대학원생을 도와주세요…" />
+      </div>
       <p className="text-center text-sm leading-relaxed text-neutral-500">
         연세대학교 일반대학원 건축공학과
         <br />
