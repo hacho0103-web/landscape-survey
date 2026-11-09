@@ -14,17 +14,16 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { imageOrder, researchConsent, recordingConsent } = body as {
+    const { imageOrder, researchConsent } = body as {
       imageOrder: string[]
       researchConsent: unknown
-      recordingConsent: unknown
     }
     const demographics = parseDemographics(body.demographics)
 
     if (!Array.isArray(imageOrder) || imageOrder.length === 0) {
       return Response.json({ error: '이미지 순서가 없습니다.' }, { status: 400 })
     }
-    if (researchConsent !== true || typeof recordingConsent !== 'boolean') {
+    if (researchConsent !== true) {
       return Response.json({ error: '동의 정보가 없습니다.' }, { status: 400 })
     }
     if (!demographics) {
@@ -42,7 +41,6 @@ export async function POST(req: NextRequest) {
         label: `실험 ${Math.max(0, ...numbers) + 1}`,
         date,
         imageOrder,
-        recordingConsent,
         demographics,
       }
       experiments.push(experiment)

@@ -459,8 +459,9 @@ export default function ResearcherView() {
                             ? `기타(${exp.demographics.jobOther})`
                             : exp.demographics.job}{' '}
                           · 관련 전공·업무 경험 {exp.demographics.experience} · 방문 빈도{' '}
-                          {exp.demographics.visitFrequency} · 인터뷰 녹음{' '}
-                          {exp.recordingConsent ? '동의' : '미동의'}
+                          {exp.demographics.visitFrequency}
+                          {exp.recordingConsent !== undefined &&
+                            ` · 인터뷰 녹음 ${exp.recordingConsent ? '동의' : '미동의'}`}
                         </p>
                       </div>
                     )}

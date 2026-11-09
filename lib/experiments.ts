@@ -11,7 +11,7 @@ export interface Experiment {
   label: string
   date: string
   imageOrder: string[]
-  recordingConsent?: boolean // 기록은 연구 참여에 동의한 경우에만 만들어진다.
+  recordingConsent?: boolean // 녹음 동의 문항을 없애기 전 기록에만 있다.
   demographics?: Demographics
   viewTimes?: Record<string, number> // 이미지별 누적 관람 시간(ms)
   ratings?: Record<string, number[]> // 이미지별 응답, RATING_QUESTIONS와 같은 순서

@@ -6,7 +6,6 @@ import {
   CONSENT_INTRO,
   CONSENT_SECTIONS,
   CONSENT_TITLE,
-  RECORDING_CONSENT,
   RESEARCH_CONSENT,
 } from '@/lib/consent'
 import {
@@ -22,7 +21,6 @@ import {
 
 export interface IntakeData {
   contact: string
-  recordingConsent: boolean
   demographics: Demographics
 }
 
@@ -70,7 +68,6 @@ const textField =
 export default function Intake({ onSubmit, onCancel }: IntakeProps) {
   const [step, setStep] = useState<Step>('consent')
   const [researchChoice, setResearchChoice] = useState('')
-  const [recordingChoice, setRecordingChoice] = useState('')
   const [contact, setContact] = useState('')
   const [gender, setGender] = useState('')
   const [age, setAge] = useState('')
@@ -82,7 +79,7 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
   const [submitFailed, setSubmitFailed] = useState(false)
 
   const declined = researchChoice === RESEARCH_CONSENT.decline
-  const canLeaveConsent = declined || (researchChoice !== '' && recordingChoice !== '')
+  const canLeaveConsent = researchChoice !== ''
   const ageNumber = Number(age)
   const isDemographicsDone =
     gender !== '' &&
@@ -112,7 +109,6 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
     setSubmitFailed(false)
     const saved = await onSubmit({
       contact: contact.trim(),
-      recordingConsent: recordingChoice === RECORDING_CONSENT.agree,
       demographics: {
         gender,
         age: ageNumber,
@@ -162,22 +158,6 @@ export default function Intake({ onSubmit, onCancel }: IntakeProps) {
                 onChange={setResearchChoice}
               />
             </fieldset>
-
-            {!declined && (
-              <fieldset className="card p-7">
-                <legend className="sr-only">{RECORDING_CONSENT.title}</legend>
-                <h3 className={question}>{RECORDING_CONSENT.title}</h3>
-                <p className="leading-relaxed text-neutral-700 mb-4">
-                  {RECORDING_CONSENT.statement}
-                </p>
-                <ChoiceGroup
-                  name="recording"
-                  options={[RECORDING_CONSENT.agree, RECORDING_CONSENT.decline]}
-                  value={recordingChoice}
-                  onChange={setRecordingChoice}
-                />
-              </fieldset>
-            )}
 
             <div className="flex justify-end gap-3">
               <button type="button" onClick={onCancel} className="btn-secondary px-6 py-3">
