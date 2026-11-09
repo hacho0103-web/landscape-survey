@@ -298,9 +298,6 @@ export default function ParticipantView() {
             >
               실험 시작
             </button>
-            <p className="text-sm text-neutral-500">
-              준비된 이미지 {images.length}개 · ESC 키를 누르면 실험을 중단합니다.
-            </p>
           </div>
         )}
       </div>
