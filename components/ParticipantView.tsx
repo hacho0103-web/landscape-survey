@@ -269,9 +269,7 @@ export default function ParticipantView() {
       <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
         <div className="text-center">
           <p className="inline-block mb-6 rounded-xl border border-neutral-300 bg-neutral-50 px-5 py-3 text-base font-medium leading-relaxed text-neutral-800 text-balance">
-            휴대폰에서는 실험을 진행할 수 없습니다.
-            <br />
-            최소한 컴퓨터 모니터 이상의, 가능한 한 큰 화면에서 참여해 주세요.
+            실험이 종료되었습니다.
           </p>
           <h2 className="text-2xl sm:text-3xl font-semibold leading-snug tracking-tight text-balance text-neutral-900">
             대규모 업무시설 저층부 보행자 경관 인식 조사 실험
@@ -294,7 +292,8 @@ export default function ParticipantView() {
           <div className="flex flex-col items-center gap-4">
             <button
               onClick={startExperiment}
-              className="btn-primary px-12 py-3.5 text-lg font-semibold"
+              disabled
+              className="btn-primary px-12 py-3.5 text-lg font-semibold disabled:cursor-not-allowed disabled:hover:bg-neutral-900 disabled:active:scale-100"
             >
               실험 시작
             </button>
