@@ -294,7 +294,8 @@ export default function ParticipantView() {
           <div className="flex flex-col items-center gap-4">
             <button
               onClick={startExperiment}
-              className="btn-primary px-12 py-3.5 text-lg font-semibold"
+              disabled
+              className="btn-primary px-12 py-3.5 text-lg font-semibold disabled:cursor-not-allowed disabled:hover:bg-neutral-900 disabled:active:scale-100"
             >
               실험 시작
             </button>
